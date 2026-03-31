@@ -432,16 +432,14 @@ const DoctorsPage = () => {
                     </div>
                 </div>
 
-                {editingDoctor ? null : (
-                    <div className="p-4 bg-destructive/5 rounded-xl border border-destructive/10">
-                        <label className="block text-sm font-bold text-foreground mb-1.5 flex items-center gap-2"><Lock className="w-4 h-4 text-destructive" /> Password</label>
-                        <input {...register("password", { 
-                            required: "Password is required for new accounts",
-                            minLength: { value: 8, message: "Min 8 characters" }
-                        })} type="password" placeholder="••••••••" className="w-full px-4 py-2 rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary/50 transition" />
-                        {errors.password && <p className="text-xs text-destructive mt-1 font-medium">{errors.password.message}</p>}
-                    </div>
-                )}
+                <div className="p-4 bg-destructive/5 rounded-xl border border-destructive/10">
+                    <label className="block text-sm font-bold text-foreground mb-1.5 flex items-center gap-2"><Lock className="w-4 h-4 text-destructive" /> {editingDoctor ? "Update Password (Leave blank to keep current)" : "Password"}</label>
+                    <input {...register("password", { 
+                        required: editingDoctor ? false : "Password is required for new accounts",
+                        minLength: { value: 8, message: "Min 8 characters" }
+                    })} type="password" placeholder="••••••••" className="w-full px-4 py-2 rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary/50 transition" />
+                    {errors.password && <p className="text-xs text-destructive mt-1 font-medium">{errors.password.message}</p>}
+                </div>
 
                 <div className="flex gap-3 pt-6 sticky bottom-0 bg-background/80 backdrop-blur-sm py-2">
                   <button type="button" onClick={closeModal} className="flex-1 px-4 py-2.5 rounded-xl border-2 border-border font-bold text-foreground hover:bg-muted transition-colors text-sm">Cancel</button>

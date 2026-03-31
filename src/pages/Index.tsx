@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Layout from "@/components/Layout";
 import HeroBanner from "@/components/HeroBanner";
 import AboutSection from "@/components/AboutSection";
@@ -9,16 +9,78 @@ import ContactPreview from "@/components/ContactPreview";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/redux/store";
 import { fetchDoctorDashboard } from "@/redux/authSlice";
+import api from "@/redux/api";
 import { motion } from "framer-motion";
-import { LayoutDashboard, Users, Heart, Star, Activity, Thermometer, BriefcaseMedical } from "lucide-react";
+import { LayoutDashboard, Users, Heart, Star, Activity, Thermometer, BriefcaseMedical, IndianRupee, AlertTriangle, Stethoscope } from "lucide-react";
 
 const Index = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { isAuthenticated, user, doctorStats } = useSelector((state: RootState) => state.auth);
 
+  const [orgStatsData, setOrgStatsData] = useState({
+    totalCows: 0,
+    totalEarnings: 0,
+    totalRecovers: 0,
+    totalDeath: 0,
+    totalMedicine: 0,
+    isLoading: true
+  });
+
   useEffect(() => {
     if (isAuthenticated && user?.role === 'doctor') {
       dispatch(fetchDoctorDashboard());
+    }
+
+    if (isAuthenticated && (user?.role === 'admin' || user?.role === 'member')) {
+      const fetchOrgData = async () => {
+        try {
+          const [cowsRes, baseStatsRes, treatmentsRes] = await Promise.all([
+            api.get('/cattle/'),
+            api.get('/cattle/base-stats/').catch(() => ({ data: { total: 0 } })),
+            api.get('/medical/')
+          ]);
+
+          let donorsRes = { data: [] };
+          let medicinesRes = { data: [] };
+
+          if (user?.role === 'admin') {
+            donorsRes = await api.get('/management/donors/').catch(() => ({ data: [] }));
+          }
+          if (user?.role === 'member') {
+            medicinesRes = await api.get('/inventory/medicines/').catch(() => ({ data: [] }));
+          }
+
+          const dynamicCowsCount = cowsRes.data?.length || 0;
+          const baseCount = baseStatsRes.data?.total || 0;
+          const totalCows = dynamicCowsCount + baseCount;
+
+          const totalEarnings = (donorsRes.data || []).reduce((sum: number, d: any) => sum + (Number(d.total_money) || 0), 0);
+
+          let recovered = 0;
+          let deaths = 0;
+          (treatmentsRes.data || []).forEach((t: any) => {
+             if (t.status === 'Recovered') recovered++;
+             if (t.status === 'Death') deaths++;
+          });
+
+          // Medicine inventory stock sum
+          const totalMedicine = (medicinesRes.data || []).reduce((sum: number, m: any) => sum + (Number(m.stock) || 0), 0);
+
+          setOrgStatsData({
+            totalCows,
+            totalEarnings,
+            totalRecovers: recovered,
+            totalDeath: deaths,
+            totalMedicine,
+            isLoading: false
+          });
+        } catch (error) {
+          console.error("Failed to fetch dashboard stats", error);
+          setOrgStatsData(prev => ({ ...prev, isLoading: false }));
+        }
+      };
+      
+      fetchOrgData();
     }
   }, [isAuthenticated, user, dispatch]);
 
@@ -30,6 +92,20 @@ const Index = () => {
         { label: "Work Status", value: "Hospital Admin", icon: Star, color: "text-amber-500", bg: "bg-amber-50" },
     ];
 
+    const adminDashboardItems = [
+        { label: "Total Earnings", value: orgStatsData.isLoading ? "..." : `₹ ${orgStatsData.totalEarnings.toLocaleString()}`, icon: IndianRupee, color: "text-emerald-500", bg: "bg-emerald-50" },
+        { label: "Total Cows", value: orgStatsData.isLoading ? "..." : orgStatsData.totalCows.toString(), icon: LayoutDashboard, color: "text-blue-500", bg: "bg-blue-50" },
+        { label: "Total Recovers", value: orgStatsData.isLoading ? "..." : orgStatsData.totalRecovers.toString(), icon: Stethoscope, color: "text-green-500", bg: "bg-green-50" },
+        { label: "Total Death", value: orgStatsData.isLoading ? "..." : orgStatsData.totalDeath.toString(), icon: AlertTriangle, color: "text-red-500", bg: "bg-red-50" },
+    ];
+
+    const memberDashboardItems = [
+        { label: "Total Cows", value: orgStatsData.isLoading ? "..." : orgStatsData.totalCows.toString(), icon: Thermometer, color: "text-blue-500", bg: "bg-blue-50" },
+        { label: "Total Death", value: orgStatsData.isLoading ? "..." : orgStatsData.totalDeath.toString(), icon: AlertTriangle, color: "text-red-500", bg: "bg-red-50" },
+        { label: "Medicine Inventory", value: orgStatsData.isLoading ? "..." : `${orgStatsData.totalMedicine} units`, icon: BriefcaseMedical, color: "text-emerald-500", bg: "bg-emerald-50" },
+        { label: "My Role", value: "Community Member", icon: Users, color: "text-indigo-500", bg: "bg-indigo-50" },
+    ];
+
     const standardStats = [
         { label: "My Contributions", value: "₹ 5,000", icon: Heart, color: "text-red-500", bg: "bg-red-50" },
         { label: "Community Members", value: "1,240", icon: Users, color: "text-blue-500", bg: "bg-blue-50" },
@@ -37,7 +113,11 @@ const Index = () => {
         { label: "Total Blessings", value: "450", icon: Star, color: "text-amber-500", bg: "bg-amber-50" },
     ];
 
-    const dashboardStats = user?.role === 'doctor' ? doctorDashboardItems : standardStats;
+    const dashboardStats = 
+        user?.role === 'doctor' ? doctorDashboardItems : 
+        user?.role === 'admin' ? adminDashboardItems : 
+        user?.role === 'member' ? memberDashboardItems : 
+        standardStats;
 
     return (
       <Layout>

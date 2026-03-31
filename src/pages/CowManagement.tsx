@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import DataTable, { TableStyles } from "react-data-table-component";
 import { useForm } from "react-hook-form";
-import { Plus, Edit2, Trash2, X, Eye,Search, Loader2, User, Hash, Calendar, MapPin, ClipboardList } from "lucide-react";
+import { Plus, Edit2, Trash2, X, Eye, Search, Loader2, User, Hash, Calendar, MapPin, ClipboardList, BarChart3 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import api from "@/redux/api";
@@ -10,6 +10,15 @@ import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 
 const MySwal = withReactContent(Swal);
+
+interface CowBaseStats {
+  id: number;
+  total: number;
+  cows: number;
+  bulls: number;
+  female_calves: number;
+  male_calves: number;
+}
 
 interface Cow {
   id: string;
@@ -55,15 +64,43 @@ const CowManagement = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [viewingCow, setViewingCow] = useState<Cow | null>(null);
   const [editingCow, setEditingCow] = useState<Cow | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [baseStats, setBaseStats] = useState<CowBaseStats | null>(null);
+  const [isEditingBaseStats, setIsEditingBaseStats] = useState(false);
 
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<CowFormData>();
 
   useEffect(() => {
     fetchCows();
+    fetchBaseStats();
   }, []);
+
+  const fetchBaseStats = async () => {
+    try {
+      const response = await api.get("/cattle/base-stats/");
+      if (response.data) {
+        setBaseStats(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch base stats:", error);
+    }
+  };
+
+  const saveBaseStats = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!baseStats) return;
+    try {
+      const response = await api.put("/cattle/base-stats/1/", baseStats);
+      setBaseStats(response.data);
+      setIsEditingBaseStats(false);
+      toast.success("Base stats updated successfully!");
+    } catch (error) {
+      toast.error("Failed to update base stats.");
+    }
+  };
 
   const fetchCows = async () => {
     try {
@@ -183,7 +220,7 @@ const CowManagement = () => {
 
   const columns = [
     {
-        name: "Id",
+      name: "Id",
       selector: (row: Cow) => row.id,
       hide: 'sm' as any,
     },
@@ -200,12 +237,11 @@ const CowManagement = () => {
       sortable: true,
       minWidth: "100px",
       cell: (row: Cow) => (
-        <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
-          row.category === 'Bull' ? 'bg-blue-100 text-blue-700' :
-          row.category === 'Calf' ? 'bg-green-100 text-green-700' :
-          row.category === 'Cow' ? 'bg-orange-100 text-orange-700' :
-          'bg-purple-100 text-purple-700'
-        }`}>
+        <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${row.category === 'Bull' ? 'bg-blue-100 text-blue-700' :
+            row.category === 'Calf' ? 'bg-green-100 text-green-700' :
+              row.category === 'Cow' ? 'bg-orange-100 text-orange-700' :
+                'bg-purple-100 text-purple-700'
+          }`}>
           {row.category}
         </span>
       )
@@ -238,26 +274,26 @@ const CowManagement = () => {
       hide: 'lg' as any,
       minWidth: "100px",
     },
-     
+
     {
       name: "Actions",
       cell: (row: Cow) => (
         <div className="flex items-center gap-2">
-          <button 
+          <button
             onClick={() => openViewModal(row)}
             className="p-1.5 rounded-lg hover:bg-blue-500/10 text-blue-500 transition-colors"
             title="View Details"
           >
             <Eye className="w-4 h-4" />
           </button>
-          <button 
+          <button
             onClick={() => openModal(row)}
             className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
             title="Edit"
           >
             <Edit2 className="w-4 h-4" />
           </button>
-          <button 
+          <button
             onClick={() => deleteCow(row.id)}
             className="p-1.5 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
             title="Delete"
@@ -269,7 +305,7 @@ const CowManagement = () => {
     },
   ];
 
-  const filteredCows = cows.filter(cow => 
+  const filteredCows = cows.filter(cow =>
     cow.caller_of_rescue.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cow.token_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cow.breed.toLowerCase().includes(searchTerm.toLowerCase())
@@ -291,13 +327,22 @@ const CowManagement = () => {
             <h1 className="text-2xl sm:text-4xl font-extrabold text-foreground tracking-tight truncate">Cow Management</h1>
             <p className="text-sm sm:text-base text-muted-foreground mt-1 truncate">Manage cows, tags, and admission records</p>
           </div>
-          <button 
-            onClick={() => openModal()}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 bg-primary text-primary-foreground rounded-xl text-sm sm:text-lg font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all w-full sm:w-auto flex-shrink-0"
-          >
-            <Plus className="w-5 h-5" />
-            Add New Cow
-          </button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+            <button
+              onClick={() => setIsStatsModalOpen(true)}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 bg-secondary text-secondary-foreground rounded-xl text-sm sm:text-lg font-bold shadow-sm border border-border hover:bg-muted transition-all flex-shrink-0"
+            >
+              <BarChart3 className="w-5 h-5" />
+              Total Cows Stats
+            </button>
+            <button
+              onClick={() => openModal()}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 sm:px-6 sm:py-3 bg-primary text-primary-foreground rounded-xl text-sm sm:text-lg font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex-shrink-0"
+            >
+              <Plus className="w-5 h-5" />
+              Add New Cow
+            </button>
+          </div>
         </div>
 
         <div className="card-elevated p-0 overflow-hidden border border-border bg-background">
@@ -313,24 +358,24 @@ const CowManagement = () => {
               />
             </div>
           </div>
-          
+
           <div className="overflow-x-auto w-full">
             <DataTable
-            columns={columns}
-            data={filteredCows}
-            pagination
-            responsive
-            highlightOnHover
-            pointerOnHover
-            customStyles={customStyles}
-            progressPending={isLoading}
-            progressComponent={
-              <div className="p-12 flex items-center justify-center gap-3 text-muted-foreground">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                <span>Loading records...</span>
-              </div>
-            }
-          />
+              columns={columns}
+              data={filteredCows}
+              pagination
+              responsive
+              highlightOnHover
+              pointerOnHover
+              customStyles={customStyles}
+              progressPending={isLoading}
+              progressComponent={
+                <div className="p-12 flex items-center justify-center gap-3 text-muted-foreground">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  <span>Loading records...</span>
+                </div>
+              }
+            />
           </div>
         </div>
       </div>
@@ -546,6 +591,89 @@ const CowManagement = () => {
 
               <div className="mt-8 flex justify-end">
                 <button onClick={closeViewModal} className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-bold hover:bg-primary/90 transition-colors">Close</button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Stats Modal */}
+      <AnimatePresence>
+        {isStatsModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsStatsModalOpen(false)} className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-2xl bg-background border border-border rounded-2xl shadow-2xl p-4 sm:p-6 overflow-hidden max-h-[95vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-6 border-b border-border pb-4">
+                <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                  <BarChart3 className="w-6 h-6 text-primary" />
+                  Total Cows Statistics
+                </h2>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => setIsEditingBaseStats(!isEditingBaseStats)} className="px-3 py-1.5 rounded-lg bg-muted text-xs font-bold hover:bg-muted/80 transition text-muted-foreground flex items-center gap-1"><Edit2 className="w-3 h-3" /> {isEditingBaseStats ? 'Cancel Edit' : 'Edit Initial Count'}</button>
+                  <button onClick={() => { setIsStatsModalOpen(false); setIsEditingBaseStats(false); }} className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors"><X className="w-5 h-5" /></button>
+                </div>
+              </div>
+
+              {isEditingBaseStats && baseStats ? (
+                <form onSubmit={saveBaseStats} className="space-y-4 mb-6 p-4 bg-muted/20 border border-border rounded-xl">
+                  <h3 className="text-sm font-bold text-muted-foreground uppercase mb-2">Configure Initial Population Base</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-xs font-bold block mb-1">Base Total</label>
+                      <input type="number" value={baseStats.total} onChange={(e) => setBaseStats({ ...baseStats, total: parseInt(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold block mb-1">Base Cows (Gau)</label>
+                      <input type="number" value={baseStats.cows} onChange={(e) => setBaseStats({ ...baseStats, cows: parseInt(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold block mb-1">Base Bulls</label>
+                      <input type="number" value={baseStats.bulls} onChange={(e) => setBaseStats({ ...baseStats, bulls: parseInt(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold block mb-1">Base Female Calves</label>
+                      <input type="number" value={baseStats.female_calves} onChange={(e) => setBaseStats({ ...baseStats, female_calves: parseInt(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold block mb-1">Base Male Calves</label>
+                      <input type="number" value={baseStats.male_calves} onChange={(e) => setBaseStats({ ...baseStats, male_calves: parseInt(e.target.value) || 0 })} className="w-full px-3 py-2 rounded-lg border border-border bg-background text-sm" />
+                    </div>
+                  </div>
+                  <div className="flex justify-end pt-2">
+                    <button type="submit" className="px-4 py-2 bg-primary text-primary-foreground font-bold rounded-lg text-sm">Save Initial Counts</button>
+                  </div>
+                </form>
+              ) : null}
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="col-span-2 md:col-span-4 p-6 bg-primary/10 rounded-2xl border border-primary/20 flex flex-col items-center justify-center text-center">
+                  <span className="text-4xl md:text-5xl font-black text-primary">{(baseStats?.total || 0) + cows.length}</span>
+                  <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest mt-2 text-primary/80">Total Cattle (All Records)</span>
+                </div>
+
+                <div className="p-5 bg-orange-100 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800 flex flex-col items-center justify-center text-center">
+                  <span className="text-3xl font-black text-orange-600 dark:text-orange-400">{(baseStats?.cows || 0) + cows.filter(c => c.category === 'Cow').length}</span>
+                  <span className="text-xs font-bold text-orange-800 dark:text-orange-200 uppercase mt-2">Cows (Gau)</span>
+                </div>
+
+                <div className="p-5 bg-blue-100 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800 flex flex-col items-center justify-center text-center">
+                  <span className="text-3xl font-black text-blue-600 dark:text-blue-400">{(baseStats?.bulls || 0) + cows.filter(c => c.category === 'Bull').length}</span>
+                  <span className="text-xs font-bold text-blue-800 dark:text-blue-200 uppercase mt-2">Bulls</span>
+                </div>
+
+                <div className="p-5 bg-pink-100 dark:bg-pink-900/20 rounded-xl border border-pink-200 dark:border-pink-800 flex flex-col items-center justify-center text-center">
+                  <span className="text-3xl font-black text-pink-600 dark:text-pink-400">{(baseStats?.female_calves || 0) + cows.filter(c => c.category === 'Calf' && c.gender === 'Female').length}</span>
+                  <span className="text-xs font-bold text-pink-800 dark:text-pink-200 uppercase mt-2">Female Calves</span>
+                </div>
+
+                <div className="p-5 bg-cyan-100 dark:bg-cyan-900/20 rounded-xl border border-cyan-200 dark:border-cyan-800 flex flex-col items-center justify-center text-center">
+                  <span className="text-3xl font-black text-cyan-600 dark:text-cyan-400">{(baseStats?.male_calves || 0) + cows.filter(c => c.category === 'Calf' && c.gender === 'Male').length}</span>
+                  <span className="text-xs font-bold text-cyan-800 dark:text-cyan-200 uppercase mt-2">Male Calves</span>
+                </div>
+              </div>
+
+              <div className="mt-8 flex justify-end">
+                <button onClick={() => { setIsStatsModalOpen(false); setIsEditingBaseStats(false); }} className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-bold hover:bg-primary/90 transition-colors">Close</button>
               </div>
             </motion.div>
           </div>

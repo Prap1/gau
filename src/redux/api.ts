@@ -70,7 +70,7 @@ api.interceptors.response.use(
 
         const newAccessToken = response.data.access;
         localStorage.setItem('access_token', newAccessToken);
-        
+
         // Update header for current and subsequent requests
         api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;

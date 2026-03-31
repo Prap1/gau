@@ -1,8 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
-import { 
-  LayoutDashboard, 
-  UserCircle, 
-  LogOut, 
+import {
+  LayoutDashboard,
+  UserCircle,
+  LogOut,
   User,
   Heart,
   Users,
@@ -33,19 +33,18 @@ const Sidebar = () => {
 
   const menuItems = [
     { name: "Dashboard", icon: LayoutDashboard, href: "/", roles: ["admin", "doctor", "member"] },
-    // { name: "Cows", icon: Database, href: "/cows", roles: ["admin", "member","doctor"] },
-     { name: "Cows", icon: Database, href: "/cows", roles: ["member","doctor"] },
-    { name: "Donors", icon: Heart, href: "/donors", roles: [ "doctor", "member"] },
-    { name: "Visitors", icon: User, href: "/visitors", roles: [ "doctor", "member"] },
-    { name: "Cow Food", icon: Wheat, href: "/cow-food", roles: [ "member"] },
-    { name: "Medicine", icon: Pill, href: "/medicine", roles: [ "doctor"] },
-    { name: "Medicine Usage", icon: ClipboardList, href: "/medicine-usage", roles: ["doctor", "member"] },
-    { name: "Treatment", icon: Stethoscope, href: "/treatment", roles: [ "doctor"] },
+    { name: "Cows", icon: Database, href: "/cows", roles: ["admin", "member", "doctor"] },
+    { name: "Donors", icon: Heart, href: "/donors", roles: ["doctor", "member", "admin"] },
+    { name: "Visitors", icon: User, href: "/visitors", roles: ["doctor", "member", "admin"] },
+    { name: "Cow Food", icon: Wheat, href: "/cow-food", roles: ["member", "admin"] },
+    { name: "Medicine", icon: Pill, href: "/medicine", roles: ["doctor", "admin"] },
+    { name: "Medicine Usage", icon: ClipboardList, href: "/medicine-usage", roles: ["doctor", "member", "admin"] },
+    { name: "Treatment", icon: Stethoscope, href: "/treatment", roles: ["doctor", "admin"] },
     { name: "Doctors", icon: UserPlus, href: "/doctors", roles: ["admin"] },
-    // { name: "Members", icon: Users, href: "/members", roles: ["admin"] },
-    // { name: "My Blogs", icon: FileText, href: "/my-blogs", roles: ["admin", "member"] },
-    // { name: "My Gallery", icon: ImageIcon, href: "/my-gallery", roles: ["admin", "member"] },
-    { name: "My Profile", icon: UserCircle, href: "/profile", roles: [ "doctor", "member"] },
+    { name: "Members", icon: Users, href: "/members", roles: ["admin"] },
+    { name: "My Blogs", icon: FileText, href: "/my-blogs", roles: ["admin", "member"] },
+    { name: "My Gallery", icon: ImageIcon, href: "/my-gallery", roles: ["admin", "member"] },
+    { name: "My Profile", icon: UserCircle, href: "/profile", roles: ["doctor", "member", "admin"] },
   ].filter(item => !role || item.roles.includes(role));
 
   const handleLogout = () => {
@@ -68,19 +67,18 @@ const Sidebar = () => {
         )}
       </AnimatePresence>
 
-      <aside 
-        className={`fixed left-0 top-[120px] bottom-0 w-64 bg-background border-r border-border flex flex-col z-[50] transition-transform duration-300 ease-in-out lg:translate-x-0 ${
-          isSidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
-        }`}
+      <aside
+        className={`fixed left-0 top-[120px] bottom-0 w-64 bg-background border-r border-border flex flex-col z-[50] transition-transform duration-300 ease-in-out lg:translate-x-0 ${isSidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
+          }`}
       >
         <div className="p-6 border-b border-border bg-muted/20">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 overflow-hidden">
               {user?.profile_image ? (
-                <img 
-                  src={user.profile_image} 
-                  alt="Profile" 
-                  className="w-full h-full object-cover" 
+                <img
+                  src={user.profile_image}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
                 />
               ) : (
                 <span className="text-primary font-bold">{user?.first_name?.[0]}{user?.last_name?.[0]}</span>
@@ -106,11 +104,10 @@ const Sidebar = () => {
                 key={item.name}
                 to={item.href}
                 onClick={() => dispatch(setSidebarOpen(false))}
-                className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all group ${
-                  isActive 
-                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/20" 
+                className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all group ${isActive
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   <item.icon className={`w-5 h-5 ${isActive ? "text-primary-foreground" : "group-hover:text-primary transition-colors"}`} />
