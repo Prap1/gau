@@ -36,7 +36,7 @@ const Sidebar = () => {
     { name: "Cows", icon: Database, href: "/cows", roles: ["admin", "member", "doctor"] },
     { name: "Donors", icon: Heart, href: "/donors", roles: ["doctor", "member", "admin"] },
     { name: "Visitors", icon: User, href: "/visitors", roles: ["doctor", "member", "admin"] },
-    { name: "Cow Food", icon: Wheat, href: "/cow-food", roles: ["member", "admin"] },
+    { name: "Cow Food", icon: Wheat, href: "/cow-food", roles: ["member", "admin", "doctor"] },
     { name: "Medicine", icon: Pill, href: "/medicine", roles: ["doctor", "admin"] },
     { name: "Medicine Usage", icon: ClipboardList, href: "/medicine-usage", roles: ["doctor", "member", "admin"] },
     { name: "Treatment", icon: Stethoscope, href: "/treatment", roles: ["doctor", "admin"] },
@@ -105,8 +105,8 @@ const Sidebar = () => {
                 to={item.href}
                 onClick={() => dispatch(setSidebarOpen(false))}
                 className={`flex items-center justify-between px-3 py-2.5 rounded-xl transition-all group ${isActive
-                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
               >
                 <div className="flex items-center gap-3">

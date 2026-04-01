@@ -38,6 +38,7 @@ interface Cow {
 
 interface TreatmentFormData {
   cow: string;
+  cow_token_no_input?: string;
   symptoms: string;
   medicine: string;
   status: "Ongoing" | "Recovered" | "Death";
@@ -53,6 +54,8 @@ const TreatmentPage = () => {
   const [medicineInput, setMedicineInput] = useState("");
   const [cowSearch, setCowSearch] = useState("");
   const [isCowDropdownOpen, setIsCowDropdownOpen] = useState(false);
+  const [cowInputMode, setCowInputMode] = useState<"manual" | "dropdown">("dropdown");
+  const [manualToken, setManualToken] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTreatment, setEditingTreatment] = useState<Treatment | null>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
@@ -95,6 +98,8 @@ const TreatmentPage = () => {
       setSelectedMedicines([]);
       setMedicineInput("");
       setCowSearch("");
+      setManualToken("");
+      setCowInputMode("dropdown");
       reset();
     }
     setIsCowDropdownOpen(false);
@@ -117,12 +122,32 @@ const TreatmentPage = () => {
     setSelectedMedicines([]);
     setMedicineInput("");
     setCowSearch("");
+    setManualToken("");
+    setCowInputMode("dropdown");
     reset();
   };
 
   const onSubmit = async (data: TreatmentFormData) => {
+    // Build payload depending on input mode
+    let cowPayload: Record<string, string>;
+    if (cowInputMode === "manual") {
+      if (!manualToken.trim()) {
+        toast.error("Please enter a token number.");
+        return;
+      }
+      // Send token string; backend resolves or creates the Cow
+      cowPayload = { cow_token_no_input: manualToken.trim() };
+    } else {
+      // Dropdown mode sends the actual cow PK
+      cowPayload = { cow: data.cow };
+    }
+
+    // Destructure `cow` out so it is never accidentally sent as a raw string.
+    // cowPayload is the sole authority: it has either { cow: pkId } or { cow_token_no_input: token }.
+    const { cow: _discardedCow, ...restData } = data;
     const formattedData = {
-      ...data,
+      ...restData,
+      ...cowPayload,
       medicine: selectedMedicines.join("; ")
     };
     if (editingTreatment) {
@@ -170,13 +195,7 @@ const TreatmentPage = () => {
       minWidth: "100px",
       cell: (row: Treatment) => <span className="font-bold text-primary truncate">{row.cow_token_no}</span>
     },
-    {
-      name: "Cow Admission",
-      selector: (row: Treatment) => row.cow_admission_date || "N/A",
-      sortable: true,
-      hide: 'lg' as any,
-      minWidth: "120px",
-    },
+
     {
       name: "Medicines",
       selector: (row: Treatment) => row.medicine,
@@ -215,8 +234,8 @@ const TreatmentPage = () => {
       minWidth: "120px",
       cell: (row: Treatment) => (
         <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold inline-flex items-center justify-center min-w-[80px] ${row.status === "Recovered" ? "bg-green-100 text-green-700" :
-            row.status === "Death" ? "bg-red-100 text-red-700" :
-              "bg-blue-100 text-blue-700"
+          row.status === "Death" ? "bg-red-100 text-red-700" :
+            "bg-blue-100 text-blue-700"
           }`}>
           {row.status === "Ongoing" ? "Recovering" : row.status}
         </span>
@@ -417,8 +436,8 @@ const TreatmentPage = () => {
                         <div>
                           <p className="text-xs font-bold text-muted-foreground uppercase">Treatment Status</p>
                           <span className={`px-2 py-0.5 rounded text-xs font-bold ${viewingTreatment.status === "Recovered" ? "bg-green-100 text-green-700" :
-                              viewingTreatment.status === "Death" ? "bg-red-100 text-red-700" :
-                                "bg-blue-100 text-blue-700"
+                            viewingTreatment.status === "Death" ? "bg-red-100 text-red-700" :
+                              "bg-blue-100 text-blue-700"
                             }`}>
                             {viewingTreatment.status}
                           </span>
@@ -490,46 +509,122 @@ const TreatmentPage = () => {
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="relative">
-                      <label className="block text-sm font-medium text-foreground mb-1.5 font-bold">Search Cow (Token/Name)</label>
-                      <input type="hidden" {...register("cow", { required: "Please select a cow" })} />
-                      <input
-                        type="text"
-                        placeholder="Type token no. or caller name..."
-                        value={cowSearch}
-                        onFocus={() => setIsCowDropdownOpen(true)}
-                        onBlur={() => setTimeout(() => setIsCowDropdownOpen(false), 200)}
-                        onChange={(e) => {
-                          setCowSearch(e.target.value);
-                          setValue("cow", "", { shouldValidate: true });
-                          setIsCowDropdownOpen(true);
-                        }}
-                        className={`w-full px-4 py-2.5 rounded-lg border ${errors.cow ? 'border-destructive' : 'border-border'} bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition`}
-                      />
-                      <AnimatePresence>
-                        {isCowDropdownOpen && (
-                          <motion.div
-                            initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
-                            className="absolute z-50 w-full mt-1 bg-background border border-border rounded-lg shadow-xl max-h-48 overflow-y-auto top-full left-0 p-1"
+                      {/* Label + mode toggle */}
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                          <Hash className="w-3.5 h-3.5 text-primary" /> Cow Tag No.
+                        </label>
+                        <div className="flex items-center bg-muted rounded-lg p-0.5 text-xs font-semibold">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCowInputMode("manual");
+                              setCowSearch("");
+                              setManualToken("");
+                              setValue("cow", "", { shouldValidate: true });
+                            }}
+                            className={`px-2.5 py-1 rounded-md transition-all ${cowInputMode === "manual"
+                                ? "bg-primary text-primary-foreground shadow"
+                                : "text-muted-foreground hover:text-foreground"
+                              }`}
                           >
-                            {cows.filter(c => `${c.token_no} ${c.caller_of_rescue}`.toLowerCase().includes(cowSearch.toLowerCase())).map(cow => (
-                              <div
-                                key={cow.id}
-                                onClick={() => {
-                                  setValue("cow", cow.id, { shouldValidate: true });
-                                  setCowSearch(`${cow.token_no} (${cow.caller_of_rescue})`);
-                                  setIsCowDropdownOpen(false);
-                                }}
-                                className="px-3 py-2.5 rounded-md hover:bg-muted cursor-pointer text-sm mb-1 last:mb-0 transition-colors"
-                              >
-                                <span className="font-bold text-primary">{cow.token_no}</span> - {cow.caller_of_rescue}
-                              </div>
-                            ))}
-                            {cows.filter(c => `${c.token_no} ${c.caller_of_rescue}`.toLowerCase().includes(cowSearch.toLowerCase())).length === 0 && (
-                              <div className="px-4 py-4 text-sm text-center text-muted-foreground italic">No cows found matching "{cowSearch}"</div>
-                            )}
+                            Manual
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCowInputMode("dropdown");
+                              setManualToken("");
+                              setCowSearch("");
+                              setValue("cow", "", { shouldValidate: true });
+                            }}
+                            className={`px-2.5 py-1 rounded-md transition-all ${cowInputMode === "dropdown"
+                                ? "bg-primary text-primary-foreground shadow"
+                                : "text-muted-foreground hover:text-foreground"
+                              }`}
+                          >
+                            Select
+                          </button>
+                        </div>
+                      </div>
+
+                      <input type="hidden" {...register("cow", { required: "Please select a cow" })} />
+
+                      {/* ── Manual entry mode ── */}
+                      <AnimatePresence mode="wait">
+                        {cowInputMode === "manual" ? (
+                          <motion.div key="manual" initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 6 }}>
+                            <input
+                              type="text"
+                              placeholder="Type token number manually…"
+                              value={manualToken}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setManualToken(val);
+                                // try to match an existing cow by token, otherwise store raw value
+                                const matched = cows.find(c => c.token_no.toLowerCase() === val.toLowerCase());
+                                setValue("cow", matched ? matched.id : val, { shouldValidate: true });
+                              }}
+                              className={`w-full px-4 py-2.5 rounded-lg border ${errors.cow ? "border-destructive" : "border-border"
+                                } bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition`}
+                            />
+                            {manualToken && (() => {
+                              const matched = cows.find(c => c.token_no.toLowerCase() === manualToken.toLowerCase());
+                              return matched ? (
+                                <p className="text-xs text-emerald-600 font-medium mt-1">✓ Matched: {matched.caller_of_rescue}</p>
+                              ) : (
+                                <p className="text-xs text-amber-500 font-medium mt-1">⚠ No existing match — will be saved as-is</p>
+                              );
+                            })()}
+                          </motion.div>
+                        ) : (
+                          /* ── Dropdown / search mode ── */
+                          <motion.div key="dropdown" initial={{ opacity: 0, x: 6 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -6 }} className="relative">
+                            <input
+                              type="text"
+                              placeholder="Type token no. or caller name…"
+                              value={cowSearch}
+                              onFocus={() => setIsCowDropdownOpen(true)}
+                              onBlur={() => setTimeout(() => setIsCowDropdownOpen(false), 200)}
+                              onChange={(e) => {
+                                setCowSearch(e.target.value);
+                                setValue("cow", "", { shouldValidate: true });
+                                setIsCowDropdownOpen(true);
+                              }}
+                              className={`w-full px-4 py-2.5 rounded-lg border ${errors.cow ? "border-destructive" : "border-border"
+                                } bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition`}
+                            />
+                            <AnimatePresence>
+                              {isCowDropdownOpen && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
+                                  className="absolute z-50 w-full mt-1 bg-background border border-border rounded-lg shadow-xl max-h-48 overflow-y-auto top-full left-0 p-1"
+                                >
+                                  {cows
+                                    .filter(c => `${c.token_no} ${c.caller_of_rescue}`.toLowerCase().includes(cowSearch.toLowerCase()))
+                                    .map(cow => (
+                                      <div
+                                        key={cow.id}
+                                        onClick={() => {
+                                          setValue("cow", cow.id, { shouldValidate: true });
+                                          setCowSearch(`${cow.token_no} (${cow.caller_of_rescue})`);
+                                          setIsCowDropdownOpen(false);
+                                        }}
+                                        className="px-3 py-2.5 rounded-md hover:bg-muted cursor-pointer text-sm mb-1 last:mb-0 transition-colors"
+                                      >
+                                        <span className="font-bold text-primary">{cow.token_no}</span> — {cow.caller_of_rescue}
+                                      </div>
+                                    ))}
+                                  {cows.filter(c => `${c.token_no} ${c.caller_of_rescue}`.toLowerCase().includes(cowSearch.toLowerCase())).length === 0 && (
+                                    <div className="px-4 py-4 text-sm text-center text-muted-foreground italic">No cows found matching "{cowSearch}"</div>
+                                  )}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </motion.div>
                         )}
                       </AnimatePresence>
+
                       {errors.cow && <p className="text-xs text-destructive mt-1 font-medium">{errors.cow.message as string}</p>}
                     </div>
                     <div>

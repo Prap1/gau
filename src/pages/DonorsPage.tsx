@@ -30,6 +30,7 @@ interface DonationFormData {
   amount: number | "";
   material_details: string;
   material_quantity: string;
+  is_visitor?: boolean;
 }
 
 const DonorsPage = () => {
@@ -79,7 +80,8 @@ const DonorsPage = () => {
           donation_type: "Money",
           amount: "",
           material_details: "",
-          material_quantity: ""
+          material_quantity: "",
+          is_visitor: false
       });
     }
     setIsModalOpen(true);
@@ -111,6 +113,7 @@ const DonorsPage = () => {
             amount: data.donation_type === "Money" ? Number(data.amount) : null,
             material_details: data.donation_type === "Material" ? data.material_details : null,
             material_quantity: data.donation_type === "Material" ? data.material_quantity : null,
+            is_visitor: data.is_visitor,
         };
         dispatch(addDonation(formattedData));
     }
@@ -351,6 +354,17 @@ const DonorsPage = () => {
                     <div className="sm:col-span-2">
                         <label className="block text-sm font-bold mb-1.5 flex items-center gap-2 tracking-wide text-foreground/80"><MapPin className="w-4 h-4 text-primary" /> Address</label>
                         <textarea {...register("address")} placeholder="Permanent address..." className="w-full px-4 py-2 rounded-lg border border-border bg-background resize-none h-16" />
+                    </div>
+                    <div className="sm:col-span-2 flex items-center gap-2 bg-background p-2 rounded-lg border border-border mt-2">
+                        <input 
+                            type="checkbox" 
+                            id="is_visitor" 
+                            {...register("is_visitor")} 
+                            className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        />
+                        <label htmlFor="is_visitor" className="text-sm font-bold text-foreground cursor-pointer">
+                            Mark as Visitor (Log a visit record)
+                        </label>
                     </div>
                   </div>
 

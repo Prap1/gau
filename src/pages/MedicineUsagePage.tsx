@@ -138,8 +138,7 @@ const MedicineUsagePage: React.FC = () => {
   };
 
   const filteredUsages = usages.filter(u => 
-    u.medicine_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.batch_number.toLowerCase().includes(searchTerm.toLowerCase())
+    u.medicine_name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const columns = [
@@ -150,7 +149,6 @@ const MedicineUsagePage: React.FC = () => {
       cell: (row: MedicineUsage) => (
         <div className="flex flex-col">
           <span className="font-bold text-foreground">{row.medicine_name}</span>
-          <span className="text-xs text-muted-foreground">Batch: {row.batch_number}</span>
         </div>
       )
     },

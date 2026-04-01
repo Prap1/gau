@@ -165,14 +165,13 @@ const MedicineManagement = () => {
 
   const columns = [
     {
-      name: "Medicine / Batch",
+      name: "Medicine",
       selector: (row: Medicine) => row.medicine_name,
       sortable: true,
       minWidth: "200px",
       cell: (row: Medicine) => (
         <div className="flex flex-col py-2">
           <span className="font-bold text-primary text-base truncate">{row.medicine_name}</span>
-          <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Batch: {row.number}</span>
         </div>
       )
     },
@@ -268,7 +267,6 @@ const MedicineManagement = () => {
 
   const filteredMedicines = medicines.filter(medicine => {
     const matchesSearch = medicine.medicine_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      medicine.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       medicine.bill_number.toLowerCase().includes(searchTerm.toLowerCase());
     
     const medDate = new Date(medicine.date_time);
@@ -420,15 +418,9 @@ const MedicineManagement = () => {
                 </div>
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-bold mb-1.5 flex items-center gap-2"><PillIcon className="w-4 h-4 text-primary" /> Medicine Name</label>
-                      <input {...register("medicine_name", { required: "Required" })} placeholder="e.g. Paracetamol" className="w-full px-4 py-2 rounded-lg border border-border bg-background" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold mb-1.5 flex items-center gap-2"><Hash className="w-4 h-4 text-primary" /> Batch Number</label>
-                      <input {...register("number", { required: "Required" })} placeholder="e.g. BTC-01" className="w-full px-4 py-2 rounded-lg border border-border bg-background" />
-                    </div>
+                  <div>
+                    <label className="block text-sm font-bold mb-1.5 flex items-center gap-2"><PillIcon className="w-4 h-4 text-primary" /> Medicine Name</label>
+                    <input {...register("medicine_name", { required: "Required" })} placeholder="e.g. Paracetamol" className="w-full px-4 py-2 rounded-lg border border-border bg-background" />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -444,7 +436,7 @@ const MedicineManagement = () => {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-bold mb-1.5 flex items-center gap-2"><Calendar className="w-4 h-4 text-primary" /> Expiry Date</label>
+                      <label className="block text-sm font-bold mb-1.5 flex items-center gap-2"><Calendar className="w-4 h-4 text-primary" /> Expiry Date <span className="text-xs font-normal text-muted-foreground">(optional)</span></label>
                       <input type="date" {...register("expiry_date")} className="w-full px-4 py-2 rounded-lg border border-border bg-background" />
                     </div>
                     <div>
