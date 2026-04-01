@@ -65,6 +65,33 @@ const MedicineUsagePage: React.FC = () => {
     }
   }, [message, error, dispatch]);
 
+  const medicineOptions = Object.values(
+    medicines.reduce((acc, med) => {
+      const name = med.medicine_name.trim();
+      if (!acc[name]) {
+        acc[name] = {
+          id: med.id, // ID of the best batch (earliest expiry)
+          medicine_name: name,
+          total_stock: 0,
+          expiry_date: med.expiry_date
+        };
+      }
+      
+      const entry = acc[name];
+      entry.total_stock += Number(med.stock);
+      
+      // FEFO Logic: Update ID if this batch expires sooner or if the current one has no expiry
+      if (med.expiry_date) {
+        if (!entry.expiry_date || new Date(med.expiry_date) < new Date(entry.expiry_date)) {
+          entry.id = med.id;
+          entry.expiry_date = med.expiry_date;
+        }
+      }
+      
+      return acc;
+    }, {} as Record<string, any>)
+  ).sort((a: any, b: any) => a.medicine_name.localeCompare(b.medicine_name));
+
   const openModal = (usage?: MedicineUsage) => {
     if (usage) {
       setEditingUsage(usage);
@@ -278,8 +305,10 @@ const MedicineUsagePage: React.FC = () => {
                       className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary/50 transition"
                     >
                       <option value="">Choose a medicine...</option>
-                      {medicines.map(m => (
-                        <option key={m.id} value={m.id}>{m.medicine_name} (Stock: {m.stock})</option>
+                      {medicineOptions.map((m: any) => (
+                        <option key={m.id} value={m.id}>
+                          {m.medicine_name} (Total Stock: {m.total_stock})
+                        </option>
                       ))}
                     </select>
                     {errors.medicine && <p className="text-destructive text-xs mt-1">{errors.medicine.message}</p>}

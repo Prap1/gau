@@ -219,11 +219,11 @@ const CowManagement = () => {
   };
 
   const columns = [
-    {
-      name: "Id",
-      selector: (row: Cow) => row.id,
-      hide: 'sm' as any,
-    },
+    // {
+    //   name: "Id",
+    //   selector: (row: Cow) => row.id,
+    //   hide: 'sm' as any,
+    // },
     {
       name: "Tag No",
       selector: (row: Cow) => row.token_no,
@@ -238,9 +238,9 @@ const CowManagement = () => {
       minWidth: "100px",
       cell: (row: Cow) => (
         <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${row.category === 'Bull' ? 'bg-blue-100 text-blue-700' :
-            row.category === 'Calf' ? 'bg-green-100 text-green-700' :
-              row.category === 'Cow' ? 'bg-orange-100 text-orange-700' :
-                'bg-purple-100 text-purple-700'
+          row.category === 'Calf' ? 'bg-green-100 text-green-700' :
+            row.category === 'Cow' ? 'bg-orange-100 text-orange-700' :
+              'bg-purple-100 text-purple-700'
           }`}>
           {row.category}
         </span>

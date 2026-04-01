@@ -25,7 +25,9 @@ interface FoodFormData {
   food_name: string;
   quantity_kg: string;
   supplier: string;
+  bill_number?: string;
   price_per_kg: string;
+  total_amount?: string;
   purchase_date: string;
   notes: string;
 }
@@ -38,7 +40,17 @@ const CowFoodPage = () => {
   const [editingStock, setEditingStock] = useState<FoodStock | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<FoodFormData>();
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FoodFormData>();
+  const watchedQuantity = watch("quantity_kg");
+  const watchedPricePerKg = watch("price_per_kg");
+
+  useEffect(() => {
+    const qty = parseFloat(watchedQuantity || "0");
+    const price = parseFloat(watchedPricePerKg || "0");
+    if (!isNaN(qty) && !isNaN(price)) {
+      setValue("total_amount", (qty * price).toFixed(2));
+    }
+  }, [watchedQuantity, watchedPricePerKg, setValue]);
 
   useEffect(() => {
     dispatch(fetchFoodStocks());
@@ -56,6 +68,8 @@ const CowFoodPage = () => {
       setValue("quantity_kg", stock.quantity_kg);
       setValue("supplier", stock.supplier || "");
       setValue("price_per_kg", stock.price_per_kg);
+      setValue("bill_number", stock.bill_number || "");
+      setValue("total_amount", stock.total_amount || "0");
       setValue("purchase_date", stock.purchase_date);
       setValue("notes", stock.notes || "");
     } else {
@@ -139,11 +153,25 @@ const CowFoodPage = () => {
       cell: (row: FoodStock) => <span className="text-muted-foreground">{row.supplier || "—"}</span>,
     },
     {
-      name: "Price/kg",
+      name: "Rate (₹/kg)",
       selector: (row: FoodStock) => row.price_per_kg,
       sortable: true,
       minWidth: "110px",
       cell: (row: FoodStock) => <span className="font-medium">₹{parseFloat(row.price_per_kg).toFixed(2)}</span>,
+    },
+    {
+      name: "Total (₹)",
+      selector: (row: FoodStock) => row.total_amount || 0,
+      sortable: true,
+      minWidth: "110px",
+      cell: (row: FoodStock) => <span className="font-bold text-emerald-600">₹{parseFloat(row.total_amount || "0").toFixed(2)}</span>,
+    },
+    {
+      name: "Bill No",
+      selector: (row: FoodStock) => row.bill_number || "—",
+      sortable: true,
+      minWidth: "120px",
+      cell: (row: FoodStock) => <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">{row.bill_number || "—"}</span>,
     },
     {
       name: "Purchase Date",
@@ -278,8 +306,20 @@ const CowFoodPage = () => {
                       {errors.quantity_kg && <p className="text-xs text-destructive mt-1">{errors.quantity_kg.message}</p>}
                     </div>
                     <div>
-                      <label className="block text-sm font-bold text-foreground mb-1.5">Price per kg (₹)</label>
-                      <input {...register("price_per_kg")} type="number" step="0.01" placeholder="0.00" className="w-full px-4 py-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition" />
+                      <label className="block text-sm font-bold text-foreground mb-1.5">Rate (₹/kg)</label>
+                      <input {...register("price_per_kg", { required: "Rate is required" })} type="number" step="0.01" placeholder="0.00" className="w-full px-4 py-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition" />
+                      {errors.price_per_kg && <p className="text-xs text-destructive mt-1">{errors.price_per_kg.message}</p>}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold text-foreground mb-1.5">Total Amount (₹)</label>
+                      <input {...register("total_amount")} type="number" step="0.01" placeholder="0.00" className="w-full px-4 py-2.5 rounded-lg border border-border bg-muted/50 text-foreground focus:outline-none cursor-not-allowed" readOnly />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-foreground mb-1.5">Bill Number</label>
+                      <input {...register("bill_number")} placeholder="Bill #" className="w-full px-4 py-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition" />
                     </div>
                   </div>
 

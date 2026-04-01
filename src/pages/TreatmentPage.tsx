@@ -127,6 +127,8 @@ const TreatmentPage = () => {
     reset();
   };
 
+  const uniqueMedicineNames = Array.from(new Set(availableMedicines.map((m: any) => m.medicine_name.trim()))).sort();
+
   const onSubmit = async (data: TreatmentFormData) => {
     // Build payload depending on input mode
     let cowPayload: Record<string, string>;
@@ -194,6 +196,13 @@ const TreatmentPage = () => {
       sortable: true,
       minWidth: "100px",
       cell: (row: Treatment) => <span className="font-bold text-primary truncate">{row.cow_token_no}</span>
+    },
+    {
+      name: "Admission Date",
+      selector: (row: Treatment) => row.cow_admission_date || "N/A",
+      sortable: true,
+      minWidth: "130px",
+      hide: 'md' as any,
     },
 
     {
@@ -688,8 +697,8 @@ const TreatmentPage = () => {
                           className="w-full px-4 py-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition pr-10"
                         />
                         <datalist id="medicine-options">
-                          {availableMedicines.map((m: any) => (
-                            <option key={m.id} value={m.medicine_name} />
+                          {uniqueMedicineNames.map((name: string) => (
+                            <option key={name} value={name} />
                           ))}
                         </datalist>
                         <button

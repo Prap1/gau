@@ -10,6 +10,7 @@ export interface Donation {
   material_quantity: string | null;
   added_by?: string;
   added_by_name?: string;
+  donation_date: string;
   created_at: string;
 }
 

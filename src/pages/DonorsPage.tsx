@@ -30,7 +30,7 @@ interface DonationFormData {
   amount: number | "";
   material_details: string;
   material_quantity: string;
-  is_visitor?: boolean;
+  donation_date: string;
 }
 
 const DonorsPage = () => {
@@ -81,7 +81,7 @@ const DonorsPage = () => {
           amount: "",
           material_details: "",
           material_quantity: "",
-          is_visitor: false
+          donation_date: new Date().toISOString().split('T')[0]
       });
     }
     setIsModalOpen(true);
@@ -113,7 +113,7 @@ const DonorsPage = () => {
             amount: data.donation_type === "Money" ? Number(data.amount) : null,
             material_details: data.donation_type === "Material" ? data.material_details : null,
             material_quantity: data.donation_type === "Material" ? data.material_quantity : null,
-            is_visitor: data.is_visitor,
+            donation_date: data.donation_date || new Date().toISOString().split('T')[0]
         };
         dispatch(addDonation(formattedData));
     }
@@ -309,7 +309,7 @@ const DonorsPage = () => {
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-sm font-bold text-foreground">{new Date(d.created_at).toLocaleDateString()}</p>
+                                        <p className="text-sm font-bold text-foreground">{new Date(d.donation_date || d.created_at).toLocaleDateString()}</p>
                                         <p className="text-[10px] text-muted-foreground uppercase font-black">Logged by {d.added_by_name || 'Admin'}</p>
                                     </div>
                                 </div>
@@ -355,17 +355,6 @@ const DonorsPage = () => {
                         <label className="block text-sm font-bold mb-1.5 flex items-center gap-2 tracking-wide text-foreground/80"><MapPin className="w-4 h-4 text-primary" /> Address</label>
                         <textarea {...register("address")} placeholder="Permanent address..." className="w-full px-4 py-2 rounded-lg border border-border bg-background resize-none h-16" />
                     </div>
-                    <div className="sm:col-span-2 flex items-center gap-2 bg-background p-2 rounded-lg border border-border mt-2">
-                        <input 
-                            type="checkbox" 
-                            id="is_visitor" 
-                            {...register("is_visitor")} 
-                            className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
-                        />
-                        <label htmlFor="is_visitor" className="text-sm font-bold text-foreground cursor-pointer">
-                            Mark as Visitor (Log a visit record)
-                        </label>
-                    </div>
                   </div>
 
                   <div className="p-4 bg-pink-500/5 border border-pink-500/10 rounded-xl space-y-4">
@@ -388,6 +377,13 @@ const DonorsPage = () => {
                         </button>
                         <input type="hidden" {...register("donation_type", { required: true })} />
                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-1 gap-4">
+                        <div>
+                          <label className="block text-sm font-bold mb-1.5 flex items-center gap-2 tracking-wide text-pink-700/80"><Calendar className="w-4 h-4" /> Donation Date</label>
+                          <input type="date" {...register("donation_date")} className="w-full px-4 py-2 rounded-lg border border-pink-200 bg-background" />
+                        </div>
                     </div>
 
                     {watchedDonationType === "Money" ? (

@@ -6,7 +6,9 @@ export interface FoodStock {
   food_name: string;
   quantity_kg: string;
   supplier: string;
+  bill_number?: string;
   price_per_kg: string;
+  total_amount?: string;
   purchase_date: string;
   notes: string;
 }
