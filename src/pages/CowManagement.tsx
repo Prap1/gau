@@ -8,6 +8,11 @@ import { toast } from "sonner";
 import api from "@/redux/api";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/redux/store";
+import { fetchSymptoms } from "@/redux/symptomSlice";
+import { fetchDiseases } from "@/redux/diseaseSlice";
+import CreatableSelect from "react-select/creatable";
 
 const MySwal = withReactContent(Swal);
 
@@ -60,6 +65,10 @@ interface CowFormData {
 }
 
 const CowManagement = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { symptoms: availableSymptoms } = useSelector((state: RootState) => state.symptom);
+  const { diseases: availableDiseases } = useSelector((state: RootState) => state.disease);
+
   const [cows, setCows] = useState<Cow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -71,12 +80,14 @@ const CowManagement = () => {
   const [baseStats, setBaseStats] = useState<CowBaseStats | null>(null);
   const [isEditingBaseStats, setIsEditingBaseStats] = useState(false);
 
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<CowFormData>();
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<CowFormData>();
 
   useEffect(() => {
     fetchCows();
     fetchBaseStats();
-  }, []);
+    dispatch(fetchSymptoms());
+    dispatch(fetchDiseases());
+  }, [dispatch]);
 
   const fetchBaseStats = async () => {
     try {
@@ -480,11 +491,91 @@ const CowManagement = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-foreground mb-1.5 font-bold"><ClipboardList className="w-4 h-4 text-primary" /> Diseases</label>
-                    <textarea {...register("diseases")} placeholder="Current diseases..." className="w-full px-4 py-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition h-20 resize-none" />
+                    <CreatableSelect
+                      isMulti
+                      placeholder="Select or type diseases..."
+                      options={availableDiseases.map(d => ({ value: d.name, label: d.name }))}
+                      value={watch("diseases") ? watch("diseases").split(", ").map(val => ({ value: val, label: val })) : []}
+                      onChange={(selected) => {
+                        const val = selected ? selected.map(s => s.value).join(", ") : "";
+                        setValue("diseases", val);
+                      }}
+                      className="react-select-container"
+                      classNamePrefix="react-select"
+                      styles={{
+                        control: (base) => ({
+                          ...base,
+                          backgroundColor: 'transparent',
+                          borderColor: 'hsl(var(--border))',
+                          borderRadius: '0.5rem',
+                          padding: '0.125rem',
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          backgroundColor: 'hsl(var(--background))',
+                          border: '1px solid hsl(var(--border))',
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          backgroundColor: state.isFocused ? 'hsl(var(--accent))' : 'transparent',
+                          color: 'hsl(var(--foreground))',
+                        }),
+                        multiValue: (base) => ({
+                          ...base,
+                          backgroundColor: 'hsl(var(--primary) / 0.1)',
+                          borderRadius: '9999px',
+                        }),
+                        multiValueLabel: (base) => ({
+                          ...base,
+                          color: 'hsl(var(--primary))',
+                          fontWeight: 'bold',
+                        }),
+                      }}
+                    />
                   </div>
                   <div>
                     <label className="flex items-center gap-2 text-sm font-medium text-foreground mb-1.5 font-bold"><ClipboardList className="w-4 h-4 text-primary" /> Symptoms</label>
-                    <textarea {...register("symptoms")} placeholder="Current symptoms..." className="w-full px-4 py-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition h-20 resize-none" />
+                    <CreatableSelect
+                      isMulti
+                      placeholder="Select or type symptoms..."
+                      options={availableSymptoms.map(s => ({ value: s.name, label: s.name }))}
+                      value={watch("symptoms") ? watch("symptoms").split(", ").map(val => ({ value: val, label: val })) : []}
+                      onChange={(selected) => {
+                        const val = selected ? selected.map(s => s.value).join(", ") : "";
+                        setValue("symptoms", val);
+                      }}
+                      className="react-select-container"
+                      classNamePrefix="react-select"
+                      styles={{
+                        control: (base) => ({
+                          ...base,
+                          backgroundColor: 'transparent',
+                          borderColor: 'hsl(var(--border))',
+                          borderRadius: '0.5rem',
+                          padding: '0.125rem',
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          backgroundColor: 'hsl(var(--background))',
+                          border: '1px solid hsl(var(--border))',
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          backgroundColor: state.isFocused ? 'hsl(var(--accent))' : 'transparent',
+                          color: 'hsl(var(--foreground))',
+                        }),
+                        multiValue: (base) => ({
+                          ...base,
+                          backgroundColor: 'hsl(var(--primary) / 0.1)',
+                          borderRadius: '9999px',
+                        }),
+                        multiValueLabel: (base) => ({
+                          ...base,
+                          color: 'hsl(var(--primary))',
+                          fontWeight: 'bold',
+                        }),
+                      }}
+                    />
                   </div>
                 </div>
 

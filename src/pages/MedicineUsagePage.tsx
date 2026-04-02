@@ -23,6 +23,8 @@ interface MedicineUsage {
   medicine: string;
   medicine_name: string;
   batch_number: string;
+  medicine_type: "Bottle" | "Tablets" | "Injection";
+  medicine_unit: "ml" | "L" | "Units";
   quantity: number;
   usage_date: string;
   usage_type: "Used" | "Defect" | "Expired";
@@ -46,7 +48,7 @@ const MedicineUsagePage: React.FC = () => {
   const [editingUsage, setEditingUsage] = useState<MedicineUsage | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<UsageFormData>();
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<UsageFormData>();
 
   useEffect(() => {
     dispatch(fetchMedicineUsages());
@@ -73,6 +75,8 @@ const MedicineUsagePage: React.FC = () => {
           id: med.id, // ID of the best batch (earliest expiry)
           medicine_name: name,
           total_stock: 0,
+          medicine_type: med.medicine_type,
+          medicine_unit: med.medicine_unit,
           expiry_date: med.expiry_date
         };
       }
@@ -125,9 +129,20 @@ const MedicineUsagePage: React.FC = () => {
     const selectedMedicine = medicines.find(m => String(m.id) === String(data.medicine));
 
     if (selectedMedicine) {
-      const remainingStock = selectedMedicine.stock - Number(data.quantity);
+      let reduction = Number(data.quantity);
+      if (selectedMedicine.medicine_type === "Bottle") {
+        const volumeStr = selectedMedicine.medicine_quantity || "1";
+        const volumeMatch = volumeStr.match(/(\d+(\.\d+)?)/);
+        const volumeValue = volumeMatch ? parseFloat(volumeMatch[1]) : 1;
+        const factor = selectedMedicine.medicine_unit === "L" ? 1000 : 1;
+        const totalVolume = volumeValue * factor;
+        reduction = reduction / totalVolume;
+      }
+      
+      const remainingStock = selectedMedicine.stock - reduction;
       if (remainingStock <= 5) {
-        toast.warning(`⚠️ Low Stock Alert: Only ${remainingStock} items left!`);
+        const unit = selectedMedicine.medicine_type === "Bottle" ? "bottles" : "units";
+        toast.warning(`⚠️ Low Stock Alert: Only ${remainingStock.toFixed(2)} ${unit} left!`);
       }
     }
 
@@ -136,9 +151,14 @@ const MedicineUsagePage: React.FC = () => {
     } else {
       dispatch(addMedicineUsage(data));
       // Refresh medicines to show updated stock
-      setTimeout(() => dispatch(fetchMedicines()), 500);
+      setTimeout(() => dispatch(fetchMedicines()), 800);
     }
   };
+
+  const selectedMedicineId = watch("medicine");
+  const selectedMedObj = medicines.find(m => String(m.id) === String(selectedMedicineId));
+  const isBottle = selectedMedObj?.medicine_type === "Bottle";
+  const unitLabel = isBottle ? "ml" : "Units/Tablets";
 
   const handleDeleteUsage = async (id: string) => {
     const result = await MySwal.fire({
@@ -186,7 +206,7 @@ const MedicineUsagePage: React.FC = () => {
       minWidth: "100px",
       cell: (row: MedicineUsage) => (
         <span className="px-2 py-1 rounded-lg bg-orange-100 text-orange-700 font-bold">
-          {row.quantity}
+          {Number(row.quantity).toFixed(2)} {row.medicine_type === "Bottle" ? "ml" : ""}
         </span>
       )
     },
@@ -307,7 +327,7 @@ const MedicineUsagePage: React.FC = () => {
                       <option value="">Choose a medicine...</option>
                       {medicineOptions.map((m: any) => (
                         <option key={m.id} value={m.id}>
-                          {m.medicine_name} (Total Stock: {m.total_stock})
+                          {m.medicine_name} (Stock: {Number(m.total_stock).toFixed(2)} bottles/units)
                         </option>
                       ))}
                     </select>
@@ -316,10 +336,14 @@ const MedicineUsagePage: React.FC = () => {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-bold mb-1.5 flex items-center gap-2"><Package className="w-4 h-4 text-primary" /> Quantity</label>
+                      <label className="block text-sm font-bold mb-1.5 flex items-center gap-2">
+                        <Package className="w-4 h-4 text-primary" /> 
+                        Quantity ({unitLabel})
+                      </label>
                       <input 
                         type="number" 
-                        {...register("quantity", { required: "Quantity is required", min: 1 })}
+                        step="0.01"
+                        {...register("quantity", { required: "Quantity is required", min: 0.01 })}
                         className="w-full px-4 py-2.5 rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary/50 transition"
                       />
                     </div>
@@ -356,8 +380,9 @@ const MedicineUsagePage: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-3 pt-4">
-                    <button type="button" onClick={closeModal} className="flex-1 px-4 py-2.5 rounded-lg border border-border font-medium hover:bg-muted transition-colors">Cancel</button>
-                    <button type="submit" className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-all">
+                    <button type="button" onClick={closeModal} disabled={loading} className="flex-1 px-4 py-2.5 rounded-lg border border-border font-medium hover:bg-muted transition-colors disabled:opacity-50">Cancel</button>
+                    <button type="submit" disabled={loading} className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-bold hover:bg-primary/90 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed">
+                      {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                       {editingUsage ? "Update Record" : "Save Record"}
                     </button>
                   </div>

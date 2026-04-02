@@ -26,6 +26,7 @@ import CowFoodPage from "./pages/CowFoodPage";
 import MedicineUsagePage from "./pages/MedicineUsagePage";
 import VisitorsPage from "./pages/VisitorsPage";
 import DonorsPage from "./pages/DonorsPage";
+import MedicalSettings from "./pages/MedicalSettings";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -61,6 +62,7 @@ const App = () => (
           <Route path="/members" element={<ProtectedRoute allowedRoles={["admin"]}><MembersPage /></ProtectedRoute>} />
           <Route path="/visitors" element={<ProtectedRoute allowedRoles={["admin", "doctor", "member"]}><VisitorsPage /></ProtectedRoute>} />
           <Route path="/donors" element={<ProtectedRoute allowedRoles={["admin", "doctor", "member"]}><DonorsPage /></ProtectedRoute>} />
+          <Route path="/medical-settings" element={<ProtectedRoute allowedRoles={["admin", "doctor"]}><MedicalSettings /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

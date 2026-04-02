@@ -9,6 +9,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/redux/store";
 import { fetchTreatments, fetchCows, addTreatment, updateTreatment, deleteTreatment, clearTreatmentMessage, clearTreatmentError } from "@/redux/treatmentSlice";
 import { fetchMedicines } from "@/redux/medicineSlice";
+import { fetchSymptoms } from "@/redux/symptomSlice";
+import CreatableSelect from "react-select/creatable";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 
@@ -49,6 +51,7 @@ const TreatmentPage = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { treatments, cows, loading: isLoading, error, message } = useSelector((state: RootState) => state.treatment);
   const { medicines: availableMedicines } = useSelector((state: RootState) => state.medicine);
+  const { symptoms: availableSymptoms } = useSelector((state: RootState) => state.symptom);
 
   const [selectedMedicines, setSelectedMedicines] = useState<string[]>([]);
   const [medicineInput, setMedicineInput] = useState("");
@@ -65,10 +68,22 @@ const TreatmentPage = () => {
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<TreatmentFormData>();
 
+  const selectedCowId = watch("cow");
+  const previousTreatment = treatments
+    .filter(t => (String(t.cow) === String(selectedCowId) || t.cow_token_no === selectedCowId) && (!editingTreatment || t.id !== editingTreatment.id))
+    .sort((a, b) => new Date(b.checkup_date).getTime() - new Date(a.checkup_date).getTime())[0];
+
+  useEffect(() => {
+    if (!editingTreatment && selectedCowId && previousTreatment) {
+      setValue("symptoms", previousTreatment.symptoms);
+    }
+  }, [selectedCowId, editingTreatment, previousTreatment, setValue]);
+
   useEffect(() => {
     dispatch(fetchTreatments());
     dispatch(fetchCows());
     dispatch(fetchMedicines());
+    dispatch(fetchSymptoms());
   }, [dispatch]);
 
   useEffect(() => {
@@ -648,7 +663,47 @@ const TreatmentPage = () => {
 
                   <div>
                     <label className="block text-sm font-medium text-foreground mb-1.5 font-bold">Symptoms</label>
-                    <textarea {...register("symptoms", { required: "Symptoms are required" })} placeholder="Describe symptoms..." className="w-full px-4 py-2.5 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition h-20 resize-none" />
+                    <CreatableSelect
+                      isMulti
+                      placeholder="Select or type symptoms..."
+                      options={availableSymptoms.map(s => ({ value: s.name, label: s.name }))}
+                      value={watch("symptoms") ? watch("symptoms").split(", ").map(val => ({ value: val, label: val })) : []}
+                      onChange={(selected) => {
+                        const val = selected ? selected.map(s => s.value).join(", ") : "";
+                        setValue("symptoms", val);
+                      }}
+                      className="react-select-container"
+                      classNamePrefix="react-select"
+                      styles={{
+                        control: (base) => ({
+                          ...base,
+                          backgroundColor: 'transparent',
+                          borderColor: 'hsl(var(--border))',
+                          borderRadius: '0.5rem',
+                          padding: '0.125rem',
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          backgroundColor: 'hsl(var(--background))',
+                          border: '1px solid hsl(var(--border))',
+                        }),
+                        option: (base, state) => ({
+                          ...base,
+                          backgroundColor: state.isFocused ? 'hsl(var(--accent))' : 'transparent',
+                          color: 'hsl(var(--foreground))',
+                        }),
+                        multiValue: (base) => ({
+                          ...base,
+                          backgroundColor: 'hsl(var(--primary) / 0.1)',
+                          borderRadius: '9999px',
+                        }),
+                        multiValueLabel: (base) => ({
+                          ...base,
+                          color: 'hsl(var(--primary))',
+                          fontWeight: 'bold',
+                        }),
+                      }}
+                    />
                   </div>
 
                   <div>

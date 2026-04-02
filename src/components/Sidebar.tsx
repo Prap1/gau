@@ -45,6 +45,7 @@ const Sidebar = () => {
     { name: "My Blogs", icon: FileText, href: "/my-blogs", roles: ["admin", "member"] },
     { name: "My Gallery", icon: ImageIcon, href: "/my-gallery", roles: ["admin", "member"] },
     { name: "My Profile", icon: UserCircle, href: "/profile", roles: ["doctor", "member", "admin"] },
+    { name: "Medical Settings", icon: Settings, href: "/medical-settings", roles: ["admin", "doctor"] },
   ].filter(item => !role || item.roles.includes(role));
 
   const handleLogout = () => {

@@ -37,6 +37,9 @@ interface Medicine {
   stia_name: string;
   total_price: number;
   paid: number;
+  medicine_type?: "Bottle" | "Tablets" | "Injection";
+  medicine_quantity?: string;
+  medicine_unit?: "ml" | "L" | "Units";
   usages?: MedicineUsage[];
 }
 
@@ -51,6 +54,9 @@ interface MedicineFormData {
   stia_name: string;
   total_price: number;
   paid: number;
+  medicine_type: "Bottle" | "Tablets" | "Injection";
+  medicine_quantity?: string;
+  medicine_unit: "ml" | "L" | "Units";
 }
 
 const MedicineManagement = () => {
@@ -65,7 +71,7 @@ const MedicineManagement = () => {
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
   const [selectedYear, setSelectedYear] = useState<string>("all");
 
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<MedicineFormData>();
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<MedicineFormData>();
 
   useEffect(() => {
     dispatch(fetchMedicines());
@@ -97,6 +103,9 @@ const MedicineManagement = () => {
       setValue("stia_name", medicine.stia_name);
       setValue("total_price", medicine.total_price);
       setValue("paid", medicine.paid);
+      setValue("medicine_type", medicine.medicine_type || "Injection");
+      setValue("medicine_quantity", medicine.medicine_quantity || "");
+      setValue("medicine_unit", medicine.medicine_unit || "Units");
     } else {
       setEditingMedicine(null);
       reset({
@@ -109,7 +118,10 @@ const MedicineManagement = () => {
         bill_number: "",
         stia_name: "",
         total_price: 0,
-        paid: 0
+        paid: 0,
+        medicine_type: "Injection",
+        medicine_quantity: "",
+        medicine_unit: "Units"
       });
     }
     setIsModalOpen(true);
@@ -185,7 +197,7 @@ const MedicineManagement = () => {
         <span className={`px-3 py-1 rounded-xl font-black transition-all ${row.total_stock <= 5 ? "animate-blink-red border-2 border-red-500 shadow-lg shadow-red-500/50" :
           row.total_stock > 10 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
           }`}>
-          {row.total_stock}
+          {Number(row.total_stock).toFixed(2)}
         </span>
       )
     },
@@ -249,7 +261,10 @@ const MedicineManagement = () => {
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8 flex-1">
               <div className="flex flex-col">
                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Bill/Store</span>
-                <span className="text-sm font-bold text-foreground">#{batch.bill_number} - {batch.stia_name}</span>
+                <span className="text-sm font-bold text-foreground">
+                  #{batch.bill_number} - {batch.stia_name}
+                  <span className="ml-2 px-1.5 py-0.5 rounded bg-muted text-[10px] font-bold text-muted-foreground uppercase">{batch.medicine_type || "N/A"} {batch.medicine_type === "Bottle" && batch.medicine_quantity ? `(${batch.medicine_quantity} ${batch.medicine_unit})` : ""}</span>
+                </span>
                 {batch.store_phone_number && (
                   <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                     <Phone className="w-2 h-2" /> {batch.store_phone_number}
@@ -268,7 +283,7 @@ const MedicineManagement = () => {
               <div className="flex flex-col">
                 <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Stock</span>
                 <span className={`text-sm font-black ${batch.stock <= 5 ? "text-red-500" : "text-emerald-600"}`}>
-                  {batch.stock}
+                  {Number(batch.stock).toFixed(2)}
                 </span>
               </div>
               <div className="flex flex-col">
@@ -415,7 +430,7 @@ const MedicineManagement = () => {
             <div className="p-3 bg-blue-500 text-white rounded-xl shadow-lg"><Package className="w-6 h-6" /></div>
             <div>
               <h4 className="text-sm font-bold text-blue-700 uppercase tracking-widest">Total Stock</h4>
-              <p className="text-2xl font-black text-foreground">{summaryStats.totalStock}</p>
+              <p className="text-2xl font-black text-foreground">{Number(summaryStats.totalStock).toFixed(2)}</p>
             </div>
           </motion.div>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0, transition: { delay: 0.1 } }} className="p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-4">
@@ -505,15 +520,58 @@ const MedicineManagement = () => {
                 </div>
 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-bold mb-1.5 flex items-center gap-2"><PillIcon className="w-4 h-4 text-primary" /> Medicine Name</label>
-                    <input {...register("medicine_name", { required: "Required" })} placeholder="e.g. Paracetamol" className="w-full px-4 py-2 rounded-lg border border-border bg-background" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold mb-1.5 flex items-center gap-2"><PillIcon className="w-4 h-4 text-primary" /> Medicine Name</label>
+                      <input {...register("medicine_name", { required: "Required" })} placeholder="e.g. Paracetamol" className="w-full px-4 py-2 rounded-lg border border-border bg-background" />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold mb-1.5 flex items-center gap-2">Medicine Type</label>
+                      <select {...register("medicine_type")} className="w-full px-4 py-2 rounded-lg border border-border bg-background">
+                        <option value="Injection">Injection</option>
+                        <option value="Tablets">Tablets</option>
+                        <option value="Bottle">Bottle</option>
+                      </select>
+                    </div>
                   </div>
+
+                  {/* watch medicine_type and show quantity if Bottle */}
+                  <AnimatePresence mode="wait">
+                    {(watch as any)("medicine_type") === "Bottle" && (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }} 
+                        animate={{ opacity: 1, height: "auto" }} 
+                        exit={{ opacity: 0, height: 0 }}
+                        className="grid grid-cols-2 gap-4 overflow-hidden"
+                      >
+                        <div>
+                          <label className="block text-sm font-bold mb-1.5 flex items-center gap-2 text-primary animate-pulse">Bottle Quantity</label>
+                          <input
+                            {...register("medicine_quantity", { required: (watch as any)("medicine_type") === "Bottle" ? "Quantity is required" : false })}
+                            placeholder="e.g. 500 or 1"
+                            className={`w-full px-4 py-2 rounded-lg border ${(errors as any).medicine_quantity ? "border-red-500" : "border-border"} bg-background`}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-bold mb-1.5 flex items-center gap-2 text-primary">Quantity Unit</label>
+                          <select
+                            {...register("medicine_unit", { required: true })}
+                            className="w-full px-4 py-2 rounded-lg border border-border bg-background"
+                          >
+                            <option value="ml">ml</option>
+                            <option value="L">L</option>
+                          </select>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-bold mb-1.5 flex items-center gap-2"><Package className="w-4 h-4 text-primary" /> Stock</label>
-                      <input type="number" {...register("stock", { required: true })} className="w-full px-4 py-2 rounded-lg border border-border bg-background" />
+                      <label className="block text-sm font-bold mb-1.5 flex items-center gap-2"><Package className="w-4 h-4 text-primary" /> Stock (Count)</label>
+                      <input type="number" step="0.01" {...register("stock", { required: true })} className="w-full px-4 py-2 rounded-lg border border-border bg-background" />
                     </div>
                     <div>
                       <label className="block text-sm font-bold mb-1.5 flex items-center gap-2"><Calendar className="w-4 h-4 text-primary" /> Entry Date</label>

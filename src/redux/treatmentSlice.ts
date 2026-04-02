@@ -41,7 +41,7 @@ const initialState: TreatmentState = {
 
 export const fetchTreatments = createAsyncThunk("treatment/fetchTreatments", async (_, { rejectWithValue }) => {
   try {
-    const response = await api.get("/medical/");
+    const response = await api.get("/medical/treatment/");
     return response.data;
   } catch (error: any) {
     return rejectWithValue(error.response?.data?.message || "Failed to fetch treatments");

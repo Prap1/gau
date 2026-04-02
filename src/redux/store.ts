@@ -9,6 +9,8 @@ import blogReducer from './blogSlice';
 import galleryReducer from './gallerySlice';
 import visitorReducer from './visitorSlice';
 import donorReducer from './donorSlice';
+import symptomReducer from './symptomSlice';
+import diseaseReducer from './diseaseSlice';
 
 export const store = configureStore({
   reducer: {
@@ -22,6 +24,8 @@ export const store = configureStore({
     gallery: galleryReducer,
     visitor: visitorReducer,
     donor: donorReducer,
+    symptom: symptomReducer,
+    disease: diseaseReducer,
   },
 });
 
