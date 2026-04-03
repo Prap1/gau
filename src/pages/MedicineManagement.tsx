@@ -1,0 +1,750 @@
+import { useState, useEffect } from "react";
+import Layout from "@/components/Layout";
+import DataTable, { TableStyles } from "react-data-table-component";
+import { useForm } from "react-hook-form";
+import {
+  Plus, Edit2, Trash2, X, Search, Loader2, Calendar,
+  CreditCard, Hash, User, Package, Pill as PillIcon,
+  Activity, History, Phone, Info
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/redux/store";
+import { fetchMedicines, addMedicine, updateMedicine, deleteMedicine, clearMedicineMessage, clearMedicineError } from "@/redux/medicineSlice";
+import { fetchMedicalStores } from "@/redux/medicalStoreSlice";
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
+
+const MySwal = withReactContent(Swal);
+
+interface MedicineUsage {
+  id: string | number;
+  usage_date: string;
+  usage_type: string;
+  quantity: number;
+  notes: string;
+}
+
+interface Medicine {
+  id: string;
+  medicine_name: string;
+  number: string;
+  stock: number;
+  expiry_date: string;
+  store_phone_number: string;
+  date_time: string;
+  bill_number: string;
+  stia_name: string;
+  total_price: number;
+  paid: number;
+  medicine_type?: "Bottle" | "Tablets" | "Injection";
+  medicine_quantity?: string;
+  medicine_unit?: "ml" | "L" | "Units";
+  usages?: MedicineUsage[];
+}
+
+interface MedicineFormData {
+  medicine_name: string;
+  number: string;
+  stock: number;
+  expiry_date: string;
+  store_phone_number: string;
+  date_time: string;
+  bill_number: string;
+  stia_name: string;
+  total_price: number;
+  paid: number;
+  medicine_type: "Bottle" | "Tablets" | "Injection";
+  medicine_quantity?: string;
+  medicine_unit: "ml" | "L" | "Units";
+}
+
+const MedicineManagement = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { medicines, loading: isLoading, error, message } = useSelector((state: RootState) => state.medicine);
+  const { medicalStores } = useSelector((state: RootState) => state.medicalStore);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [selectedMedicineForHistory, setSelectedMedicineForHistory] = useState<Medicine | null>(null);
+  const [editingMedicine, setEditingMedicine] = useState<Medicine | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState<string>("all");
+  const [selectedYear, setSelectedYear] = useState<string>("all");
+
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<MedicineFormData>();
+
+  useEffect(() => {
+    dispatch(fetchMedicines());
+    dispatch(fetchMedicalStores());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (message) {
+      toast.success(message);
+      dispatch(clearMedicineMessage());
+    }
+    if (error) {
+      toast.error(error);
+      dispatch(clearMedicineError());
+    }
+  }, [message, error, dispatch]);
+
+  const onStoreSelect = (storeName: string) => {
+    const selectedStore = medicalStores.find(s => s.name === storeName);
+    if (selectedStore) {
+      setValue("store_phone_number", selectedStore.contact_no || "");
+    }
+  };
+
+  const openModal = (medicine?: Medicine) => {
+    if (medicine) {
+      setEditingMedicine(medicine);
+      setValue("medicine_name", medicine.medicine_name);
+      setValue("number", medicine.number);
+      setValue("stock", medicine.stock);
+      setValue("expiry_date", medicine.expiry_date || "");
+      setValue("store_phone_number", medicine.store_phone_number || "");
+      const date = new Date(medicine.date_time);
+      const formattedDate = date.toISOString().slice(0, 16);
+      setValue("date_time", formattedDate);
+      setValue("bill_number", medicine.bill_number);
+      setValue("stia_name", medicine.stia_name);
+      setValue("total_price", medicine.total_price);
+      setValue("paid", medicine.paid);
+      setValue("medicine_type", medicine.medicine_type || "Injection");
+      setValue("medicine_quantity", medicine.medicine_quantity || "");
+      setValue("medicine_unit", medicine.medicine_unit || "Units");
+    } else {
+      setEditingMedicine(null);
+      reset({
+        date_time: new Date().toISOString().slice(0, 16),
+        stock: 0,
+        expiry_date: "",
+        store_phone_number: "",
+        medicine_name: "",
+        number: "",
+        bill_number: "",
+        stia_name: "",
+        total_price: 0,
+        paid: 0,
+        medicine_type: "Injection",
+        medicine_quantity: "",
+        medicine_unit: "Units"
+      });
+    }
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingMedicine(null);
+    reset();
+  };
+
+  const openHistoryModal = (medicine: Medicine) => {
+    setSelectedMedicineForHistory(medicine);
+    setIsHistoryModalOpen(true);
+  };
+
+  const closeHistoryModal = () => {
+    setIsHistoryModalOpen(false);
+    setSelectedMedicineForHistory(null);
+  };
+
+  const onSubmit = async (data: MedicineFormData) => {
+    if (editingMedicine) {
+      dispatch(updateMedicine({ id: editingMedicine.id, data }));
+    } else {
+      dispatch(addMedicine(data));
+    }
+    closeModal();
+  };
+
+  const handleDeleteMedicine = async (id: string) => {
+    const result = await MySwal.fire({
+      title: "Are you sure?",
+      text: "This medicine record will be permanently deleted!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (result.isConfirmed) {
+      dispatch(deleteMedicine(id));
+      MySwal.fire({
+        title: "Deleted!",
+        text: "Medicine record removed successfully",
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    }
+  };
+
+  const columns = [
+    {
+      name: "Medicine",
+      selector: (row: any) => row.medicine_name,
+      sortable: true,
+      minWidth: "200px",
+      cell: (row: any) => (
+        <div className="flex flex-col py-2">
+          <span className="font-bold text-primary text-base truncate">{row.medicine_name}</span>
+          <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">{row.batches.length} {row.batches.length === 1 ? 'Batch' : 'Batches'}</span>
+        </div>
+      )
+    },
+    {
+      name: "Total Stock",
+      selector: (row: any) => row.total_stock,
+      sortable: true,
+      width: "110px",
+      cell: (row: any) => (
+        <span className={`px-3 py-1 rounded-xl font-black transition-all ${row.total_stock <= 5 ? "animate-blink-red border-2 border-red-500 shadow-lg shadow-red-500/50" :
+          row.total_stock > 10 ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+          }`}>
+          {Number(row.total_stock).toFixed(2)}
+        </span>
+      )
+    },
+    {
+      name: "Last Entry",
+      selector: (row: any) => row.last_entry,
+      sortable: true,
+      width: "130px",
+      cell: (row: any) => (
+        <div className="flex flex-col">
+          <span className="text-xs font-bold text-foreground">{new Date(row.last_entry).toLocaleDateString()}</span>
+          <span className="text-[10px] text-muted-foreground">{new Date(row.last_entry).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        </div>
+      )
+    },
+    {
+      name: "Last Expiry Date",
+      selector: (row: any) => row.expiry_date || "-",
+      sortable: true,
+      width: "130px",
+      cell: (row: any) => {
+        if (!row.expiry_date) return <span className="text-muted-foreground text-xs italic">Not Set</span>;
+        const isExpired = new Date(row.expiry_date) < new Date();
+        return (
+          <div className="flex flex-col">
+            <span className={`text-xs font-bold ${isExpired ? "text-red-600" : "text-emerald-600"}`}>
+              {new Date(row.expiry_date).toLocaleDateString()}
+            </span>
+            {isExpired && <span className="text-[8px] font-black uppercase text-red-500">Expired</span>}
+          </div>
+        );
+      }
+    },
+    {
+      name: "Total Paid / Price",
+      selector: (row: any) => row.total_paid,
+      sortable: true,
+      minWidth: "150px",
+      cell: (row: any) => (
+        <div className="flex flex-col">
+          <span className="text-sm font-bold text-foreground">₹{row.total_paid} / ₹{row.total_price}</span>
+          <div className="w-full h-1 bg-muted rounded-full mt-1 overflow-hidden">
+            <div
+              className={`h-full transition-all ${Number(row.total_paid) >= Number(row.total_price) ? 'bg-emerald-500' : 'bg-yellow-500'}`}
+              style={{ width: `${Math.min((row.total_paid / row.total_price) * 100, 100)}%` }}
+            />
+          </div>
+        </div>
+      )
+    },
+  ];
+
+  const ExpandedMedicineDetails = ({ data }: { data: any }) => (
+    <div className="p-6 bg-muted/30 border-y border-border/50">
+      <h4 className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground mb-4 flex items-center gap-2">
+        <Package className="w-3 h-3" /> Batch Details for {data.medicine_name}
+      </h4>
+      <div className="grid grid-cols-1 gap-3">
+        {data.batches.map((batch: Medicine) => (
+          <div key={batch.id} className="bg-background border border-border/50 rounded-xl p-4 flex items-center justify-between shadow-sm hover:shadow-md transition-all">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8 flex-1">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Bill/Store</span>
+                <span className="text-sm font-bold text-foreground">
+                  #{batch.bill_number} - {batch.stia_name}
+                  <span className="ml-2 px-1.5 py-0.5 rounded bg-muted text-[10px] font-bold text-muted-foreground uppercase">{batch.medicine_type || "N/A"} {batch.medicine_type === "Bottle" && batch.medicine_quantity ? `(${batch.medicine_quantity} ${batch.medicine_unit})` : ""}</span>
+                </span>
+                {batch.store_phone_number && (
+                  <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                    <Phone className="w-2 h-2" /> {batch.store_phone_number}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Entry Date</span>
+                <span className="text-sm font-bold text-foreground">
+                  {new Date(batch.date_time).toLocaleDateString()}
+                </span>
+                <span className="text-[10px] text-muted-foreground font-medium">
+                  {new Date(batch.date_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Stock</span>
+                <span className={`text-sm font-black ${batch.stock <= 5 ? "text-red-500" : "text-emerald-600"}`}>
+                  {Number(batch.stock).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Expiry</span>
+                <span className={`text-sm font-bold ${batch.expiry_date && new Date(batch.expiry_date) < new Date() ? "text-red-500" : "text-foreground"}`}>
+                  {batch.expiry_date ? new Date(batch.expiry_date).toLocaleDateString() : "-"}
+                </span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Payment Status</span>
+                <span className="text-sm font-bold text-foreground">₹{batch.paid} / ₹{batch.total_price}</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 ml-4">
+              <button
+                onClick={() => openHistoryModal(batch)}
+                className="p-2 hover:bg-orange-100 text-orange-600 rounded-lg transition-colors border border-transparent hover:border-orange-200"
+                title="Usage History"
+              >
+                <History className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => openModal(batch)}
+                className="p-2 hover:bg-primary/10 text-primary rounded-lg transition-colors border border-transparent hover:border-primary/20"
+                title="Edit Batch"
+              >
+                <Edit2 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleDeleteMedicine(batch.id)}
+                className="p-2 hover:bg-destructive/10 text-destructive rounded-lg transition-colors border border-transparent hover:border-destructive/20"
+                title="Delete Batch"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const filteredMedicines = medicines.filter(medicine => {
+    const matchesSearch = medicine.medicine_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      medicine.bill_number.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const medDate = new Date(medicine.date_time);
+    const matchesMonth = selectedMonth === "all" || (medDate.getMonth() + 1).toString() === selectedMonth;
+    const matchesYear = selectedYear === "all" || medDate.getFullYear().toString() === selectedYear;
+
+    return matchesSearch && matchesMonth && matchesYear;
+  });
+
+  const groupedMedicines = Object.values(
+    filteredMedicines.reduce((acc, med) => {
+      const name = med.medicine_name.trim();
+      if (!acc[name]) {
+        acc[name] = {
+          medicine_name: name,
+          total_stock: 0,
+          total_price: 0,
+          total_paid: 0,
+          expiry_date: "",
+          last_entry: med.date_time,
+          batches: [],
+          usages: []
+        };
+      }
+
+      const current = acc[name];
+      current.total_stock += Number(med.stock);
+      current.total_price += Number(med.total_price);
+      current.total_paid += Number(med.paid);
+      current.batches.push(med);
+      if (med.usages) current.usages.push(...med.usages);
+
+      // Keep track of nearest expiry
+      if (med.expiry_date) {
+        if (!current.expiry_date || new Date(med.expiry_date) < new Date(current.expiry_date)) {
+          current.expiry_date = med.expiry_date;
+        }
+      }
+
+      // Keep track of latest entry
+      if (new Date(med.date_time) > new Date(current.last_entry)) {
+        current.last_entry = med.date_time;
+      }
+
+      return acc;
+    }, {} as Record<string, any>)
+  );
+
+  const summaryStats = filteredMedicines.reduce((acc, med) => {
+    acc.totalStock += Number(med.stock);
+    acc.totalInvestment += Number(med.total_price);
+    acc.totalPaid += Number(med.paid);
+    return acc;
+  }, { totalStock: 0, totalInvestment: 0, totalPaid: 0 });
+
+  const outstanding = summaryStats.totalInvestment - summaryStats.totalPaid;
+
+  const availableYears = Array.from(new Set(medicines.map(m => new Date(m.date_time).getFullYear()))).sort((a, b) => b - a);
+  const months = [
+    { value: "1", label: "January" }, { value: "2", label: "February" }, { value: "3", label: "March" },
+    { value: "4", label: "April" }, { value: "5", label: "May" }, { value: "6", label: "June" },
+    { value: "7", label: "July" }, { value: "8", label: "August" }, { value: "9", label: "September" },
+    { value: "10", label: "October" }, { value: "11", label: "November" }, { value: "12", label: "December" }
+  ];
+
+  const customStyles: TableStyles = {
+    header: { style: { minHeight: '56px' } },
+    headRow: { style: { borderTopStyle: 'solid' as any, borderTopWidth: '1px', borderTopColor: 'var(--border)', backgroundColor: 'var(--muted)' } },
+    headCells: { style: { '&:not(:last-child)': { borderRightStyle: 'solid', borderRightWidth: '1px', borderRightColor: 'var(--border)' }, color: 'var(--foreground)', fontWeight: 'bold' } },
+    cells: { style: { '&:not(:last-child)': { borderRightStyle: 'solid', borderRightWidth: '1px', borderRightColor: 'var(--border)' }, color: 'var(--foreground)' } },
+    pagination: { style: { borderTopStyle: 'solid' as any, borderTopWidth: '1px', borderTopColor: 'var(--border)' } },
+  };
+
+  return (
+    <Layout>
+      <div className="p-4 sm:p-8 w-full max-w-7xl mx-auto overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+          <div className="overflow-hidden">
+            <h1 className="text-2xl sm:text-4xl font-extrabold text-foreground tracking-tight flex items-center gap-3">
+              <PillIcon className="w-10 h-10 text-primary" />
+              Medicine Inventory
+            </h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">Manage medicine stocks, bills, and track usage incidents.</p>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => openModal()}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl text-lg font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all w-full sm:w-auto"
+            >
+              <Plus className="w-5 h-5" />
+              Add New Stock
+            </button>
+          </div>
+        </div>
+
+        {/* Monthly Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-6 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center gap-4">
+            <div className="p-3 bg-blue-500 text-white rounded-xl shadow-lg"><Package className="w-6 h-6" /></div>
+            <div>
+              <h4 className="text-sm font-bold text-blue-700 uppercase tracking-widest">Total Stock</h4>
+              <p className="text-2xl font-black text-foreground">{Number(summaryStats.totalStock).toFixed(2)}</p>
+            </div>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0, transition: { delay: 0.1 } }} className="p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-4">
+            <div className="p-3 bg-emerald-500 text-white rounded-xl shadow-lg"><CreditCard className="w-6 h-6" /></div>
+            <div>
+              <h4 className="text-sm font-bold text-emerald-700 uppercase tracking-widest">Total Investment</h4>
+              <p className="text-2xl font-black text-foreground">₹{summaryStats.totalInvestment.toFixed(2)}</p>
+            </div>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0, transition: { delay: 0.2 } }} className="p-6 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center gap-4">
+            <div className="p-3 bg-red-500 text-white rounded-xl shadow-lg"><Activity className="w-6 h-6" /></div>
+            <div>
+              <h4 className="text-sm font-bold text-red-700 uppercase tracking-widest">Outstanding</h4>
+              <p className="text-2xl font-black text-foreground">₹{outstanding.toFixed(2)}</p>
+            </div>
+          </motion.div>
+        </div>
+
+        <div className="card-elevated p-0 overflow-hidden border border-border/50 bg-background/80 backdrop-blur-xl shadow-2xl rounded-2xl">
+          <div className="p-4 border-b border-border bg-muted/20">
+            <div className="flex flex-col sm:flex-row gap-4 items-center w-full justify-between">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Search medicine..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="px-3 py-2 rounded-lg border border-border bg-background text-sm font-medium focus:ring-2 focus:ring-primary/50"
+                >
+                  <option value="all">All Months</option>
+                  {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                </select>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(e.target.value)}
+                  className="px-3 py-2 rounded-lg border border-border bg-background text-sm font-medium focus:ring-2 focus:ring-primary/50"
+                >
+                  <option value="all">All Years</option>
+                  {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto w-full">
+            <DataTable
+              columns={columns}
+              data={groupedMedicines}
+              expandableRows
+              expandableRowsComponent={ExpandedMedicineDetails}
+              pagination
+              responsive
+              highlightOnHover
+              pointerOnHover
+              customStyles={customStyles}
+              progressPending={isLoading}
+              progressComponent={
+                <div className="p-12 flex items-center justify-center gap-3 text-muted-foreground">
+                  <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  <span>Loading inventory...</span>
+                </div>
+              }
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Add/Edit Modal */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-[100] overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeModal} className="fixed inset-0 bg-background/80 backdrop-blur-sm" />
+              <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-xl bg-background border border-border rounded-2xl shadow-2xl p-6 flex flex-col">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-foreground">{editingMedicine ? "Edit Medicine Record" : "Add New Stock"}</h2>
+                  <button onClick={closeModal} className="p-2 rounded-lg hover:bg-muted text-muted-foreground"><X className="w-5 h-5" /></button>
+                </div>
+
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold mb-1.5 flex items-center gap-2"><PillIcon className="w-4 h-4 text-primary" /> Medicine Name</label>
+                      <input {...register("medicine_name", { required: "Required" })} placeholder="e.g. Paracetamol" className="w-full px-4 py-2 rounded-lg border border-border bg-background" />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold mb-1.5 flex items-center gap-2">Medicine Type</label>
+                      <select {...register("medicine_type")} className="w-full px-4 py-2 rounded-lg border border-border bg-background">
+                        <option value="Injection">Injection</option>
+                        <option value="Tablets">Tablets</option>
+                        <option value="Bottle">Bottle</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* watch medicine_type and show quantity if Bottle */}
+                  <AnimatePresence mode="wait">
+                    {(watch as any)("medicine_type") === "Bottle" && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="grid grid-cols-2 gap-4 overflow-hidden"
+                      >
+                        <div>
+                          <label className="block text-sm font-bold mb-1.5 flex items-center gap-2 text-primary animate-pulse">Bottle Quantity</label>
+                          <input
+                            {...register("medicine_quantity", { required: (watch as any)("medicine_type") === "Bottle" ? "Quantity is required" : false })}
+                            placeholder="e.g. 500 or 1"
+                            className={`w-full px-4 py-2 rounded-lg border ${(errors as any).medicine_quantity ? "border-red-500" : "border-border"} bg-background`}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-bold mb-1.5 flex items-center gap-2 text-primary">Quantity Unit</label>
+                          <select
+                            {...register("medicine_unit", { required: true })}
+                            className="w-full px-4 py-2 rounded-lg border border-border bg-background"
+                          >
+                            <option value="ml">ml</option>
+                            <option value="L">L</option>
+                          </select>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold mb-1.5 flex items-center gap-2"><Package className="w-4 h-4 text-primary" /> Stock (Count)</label>
+                      <input type="number" step="0.01" {...register("stock", { required: true })} className="w-full px-4 py-2 rounded-lg border border-border bg-background" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold mb-1.5 flex items-center gap-2"><Calendar className="w-4 h-4 text-primary" /> Entry Date</label>
+                      <input type="datetime-local" {...register("date_time", { required: true })} className="w-full px-4 py-2 rounded-lg border border-border bg-background" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold mb-1.5 flex items-center gap-2"><Calendar className="w-4 h-4 text-primary" /> Expiry Date <span className="text-xs font-normal text-muted-foreground">(optional)</span></label>
+                      <input type="date" {...register("expiry_date")} className="w-full px-4 py-2 rounded-lg border border-border bg-background" />
+                    </div>
+
+
+                    <div>
+                      <label className="block text-sm font-bold mb-1.5 flex items-center gap-2"><User className="w-4 h-4 text-primary" /> Store/Staff</label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          list="store-suggestions"
+                          {...register("stia_name", { required: "Required" })}
+                          onChange={(e) => {
+                            register("stia_name").onChange(e);
+                            onStoreSelect(e.target.value);
+                          }}
+                          placeholder="Select or type store name..."
+                          className="w-full px-4 py-2 rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        />
+                        <datalist id="store-suggestions">
+                          {medicalStores.map(store => (
+                            <option key={store.id} value={store.name} />
+                          ))}
+                        </datalist>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">
+                          <Search className="h-4 w-4" />
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold mb-1.5 flex items-center gap-2"><Hash className="w-4 h-4 text-primary" /> Bill Number</label>
+                      <input {...register("bill_number", { required: true })} className="w-full px-4 py-2 rounded-lg border border-border bg-background" />
+                    </div>
+                    {/* <div>
+                      <label className="block text-sm font-bold mb-1.5 flex items-center gap-2"><User className="w-4 h-4 text-primary" /> Store/Staff</label>
+                      <div className="relative">
+                        <select
+                          {...register("stia_name", { required: true })}
+                          onChange={(e) => {
+                            register("stia_name").onChange(e);
+                            onStoreSelect(e.target.value);
+                          }}
+                          className="w-full px-4 py-2 rounded-lg border border-border bg-background appearance-none"
+                        >
+                          <option value="">Select Store</option>
+                          {medicalStores.map(store => (
+                            <option key={store.id} value={store.name}>{store.name}</option>
+                          ))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-muted-foreground">
+                          <Search className="h-4 w-4" />
+                        </div>
+                      </div>
+                    </div> */}
+                    <div>
+                      <label className="block text-sm font-bold mb-1.5 flex items-center gap-2"><Phone className="w-4 h-4 text-primary" /> Store Phone</label>
+                      <input {...register("store_phone_number")} placeholder="e.g. +91 987..." className="w-full px-4 py-2 rounded-lg border border-border bg-background" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-bold mb-1.5 flex items-center gap-2"><CreditCard className="w-4 h-4 text-primary" /> Total Price</label>
+                      <input type="number" step="0.01" {...register("total_price", { required: true })} className="w-full px-4 py-2 rounded-lg border border-border bg-background" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold mb-1.5 flex items-center gap-2"><CreditCard className="w-4 h-4 text-primary" /> Paid</label>
+                      <input type="number" step="0.01" {...register("paid", { required: true })} className="w-full px-4 py-2 rounded-lg border border-border bg-background" />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <button type="button" onClick={closeModal} className="flex-1 px-4 py-2 rounded-lg border border-border">Cancel</button>
+                    <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-bold">Save</button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* History Modal (Incidents) */}
+      <AnimatePresence>
+        {isHistoryModalOpen && selectedMedicineForHistory && (
+          <div className="fixed inset-0 z-[130] overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={closeHistoryModal} className="fixed inset-0 bg-background/80 backdrop-blur-sm" />
+              <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-2xl bg-background border border-border rounded-2xl shadow-2xl p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-xl font-bold flex items-center gap-2">
+                      <History className="w-6 h-6 text-primary" />
+                      Usage History: {selectedMedicineForHistory.medicine_name}
+                    </h2>
+                    <p className="text-sm text-muted-foreground mt-1">Showing all recorded usage, defects, and expiry events.</p>
+                  </div>
+                  <button onClick={closeHistoryModal} className="p-2 rounded-lg hover:bg-muted text-muted-foreground"><X className="w-5 h-5" /></button>
+                </div>
+
+                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                  {!selectedMedicineForHistory.usages || selectedMedicineForHistory.usages.length === 0 ? (
+                    <div className="text-center py-12 bg-muted/20 rounded-xl border border-dashed border-border">
+                      <Activity className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+                      <p className="text-muted-foreground italic">No usage incidents recorded for this medicine.</p>
+                    </div>
+                  ) : (
+                    selectedMedicineForHistory.usages.map((usage) => (
+                      <div key={usage.id} className="flex items-start gap-4 p-4 rounded-xl border border-border hover:border-primary/30 bg-muted/10 transition-colors">
+                        <div className={`p-2 rounded-lg mt-1 ${usage.usage_type === 'Used' ? 'bg-blue-100 text-blue-600' :
+                          usage.usage_type === 'Defect' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'
+                          }`}>
+                          <Activity className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-bold text-foreground capitalize">{usage.usage_type}</span>
+                            <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
+                              <Calendar className="w-3 h-3" /> {new Date(usage.usage_date).toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4 mb-2">
+                            <span className="text-sm font-bold text-primary flex items-center gap-1">
+                              <Hash className="w-3 h-3" /> Quantity: -{usage.quantity}
+                            </span>
+                          </div>
+                          {usage.notes && (
+                            <div className="text-sm text-muted-foreground bg-background/50 p-2 rounded-md border border-border/50 flex items-start gap-2">
+                              <Info className="w-3 h-3 mt-1 flex-shrink-0" />
+                              <p className="italic">{usage.notes}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-border flex justify-end">
+                  <button onClick={closeHistoryModal} className="px-6 py-2 bg-primary text-primary-foreground rounded-lg font-bold hover:bg-primary/90 transition-all">
+                    Close Details
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+    </Layout>
+  );
+};
+
+export default MedicineManagement;

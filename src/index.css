@@ -1,0 +1,142 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 40 33% 98%;
+    --foreground: 25 30% 15%;
+
+    --card: 40 40% 97%;
+    --card-foreground: 25 30% 15%;
+
+    --popover: 40 40% 97%;
+    --popover-foreground: 25 30% 15%;
+
+    --primary: 25 95% 53%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 120 35% 35%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 40 20% 92%;
+    --muted-foreground: 25 15% 45%;
+
+    --accent: 40 60% 85%;
+    --accent-foreground: 25 30% 15%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 40 25% 85%;
+    --input: 40 25% 85%;
+    --ring: 25 95% 53%;
+
+    --radius: 0.75rem;
+
+    /* Custom colors */
+    --saffron: 25 95% 53%;
+    --saffron-light: 30 90% 65%;
+    --saffron-dark: 20 90% 45%;
+    --forest: 120 35% 35%;
+    --forest-light: 120 30% 50%;
+    --cream: 40 40% 95%;
+    --cream-dark: 40 30% 90%;
+    --earth: 25 40% 30%;
+    
+    /* Gradients */
+    --gradient-saffron: linear-gradient(135deg, hsl(25 95% 53%), hsl(35 90% 55%));
+    --gradient-hero: linear-gradient(180deg, hsl(40 33% 98%) 0%, hsl(40 40% 92%) 100%);
+    --gradient-forest: linear-gradient(135deg, hsl(120 35% 35%), hsl(120 40% 45%));
+    
+    /* Shadows */
+    --shadow-soft: 0 4px 20px -5px hsl(25 95% 53% / 0.15);
+    --shadow-card: 0 10px 40px -10px hsl(25 30% 15% / 0.1);
+    --shadow-elevated: 0 20px 50px -15px hsl(25 30% 15% / 0.15);
+  }
+
+  .dark {
+    --background: 25 30% 10%;
+    --foreground: 40 33% 95%;
+
+    --card: 25 25% 15%;
+    --card-foreground: 40 33% 95%;
+
+    --popover: 25 25% 15%;
+    --popover-foreground: 40 33% 95%;
+
+    --primary: 25 95% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 120 30% 40%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 25 20% 20%;
+    --muted-foreground: 40 15% 65%;
+
+    --accent: 40 40% 25%;
+    --accent-foreground: 40 33% 95%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 25 20% 25%;
+    --input: 25 20% 25%;
+    --ring: 25 95% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  html, body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Poppins', sans-serif;
+    overflow-x: hidden;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold 
+           hover:opacity-90 transition-all duration-300 shadow-lg;
+    background: var(--gradient-saffron);
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground px-6 py-3 rounded-lg font-semibold 
+           hover:opacity-90 transition-all duration-300;
+    background: var(--gradient-forest);
+  }
+
+  .card-elevated {
+    @apply bg-card rounded-xl p-6;
+    box-shadow: var(--shadow-card);
+  }
+
+  .section-padding {
+    @apply py-16 md:py-24 px-4 md:px-8;
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background: var(--gradient-saffron);
+  }
+
+  @keyframes blink-red {
+    0%, 100% { background-color: rgba(239, 68, 68, 0.1); color: rgb(185, 28, 28); }
+    50% { background-color: rgba(239, 68, 68, 1); color: white; }
+  }
+
+  .animate-blink-red {
+    animation: blink-red 0.8s infinite;
+  }
+}
