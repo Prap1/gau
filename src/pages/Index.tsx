@@ -56,21 +56,23 @@ const Index = () => {
 
           const totalEarnings = (donorsRes.data || []).reduce((sum: number, d: any) => sum + (Number(d.total_money) || 0), 0);
 
-          const uniqueCowsStats = new Set();
+          const latestStatusMap = new Map();
           let recovered = 0;
           let deaths = 0;
-          // Sort by latest checkup first to count only the current status for each unique cow
-          const sortedTreatments = (treatmentsRes.data || []).sort((a: any, b: any) => 
-            new Date(b.checkup_date).getTime() - new Date(a.checkup_date).getTime()
-          );
 
-          sortedTreatments.forEach((t: any) => {
-             const cowId = t.cow_token_no || t.cow;
-             if (!uniqueCowsStats.has(cowId)) {
-               uniqueCowsStats.add(cowId);
-               if (t.status === 'Recovered') recovered++;
-               if (t.status === 'Death') deaths++;
-             }
+          (treatmentsRes.data || []).forEach((t: any) => {
+            const cowId = t.cow_token_no || t.cow;
+            if (!cowId) return;
+            // Use 0 as fallback for missing dates to ensure any date takes precedence
+            const date = t.checkup_date ? new Date(t.checkup_date).getTime() : 0;
+            if (!latestStatusMap.has(cowId) || date > latestStatusMap.get(cowId).date) {
+              latestStatusMap.set(cowId, { status: t.status, date });
+            }
+          });
+
+          latestStatusMap.forEach((val) => {
+            if (val.status === 'Recovered') recovered++;
+            if (val.status === 'Death') deaths++;
           });
 
           // Medicine inventory stock sum

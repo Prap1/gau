@@ -321,7 +321,7 @@ const TreatmentPage = () => {
   const uniqueCowsStats = new Set();
   const stats = filteredTreatments.reduce((acc, t) => {
     const token = t.cow_token_no || t.cow;
-    if (!uniqueCowsStats.has(token)) {
+    if (token && !uniqueCowsStats.has(token)) {
       uniqueCowsStats.add(token);
       if (t.status === "Ongoing") acc.recovering++;
       else if (t.status === "Recovered") acc.recovered++;
