@@ -56,11 +56,21 @@ const Index = () => {
 
           const totalEarnings = (donorsRes.data || []).reduce((sum: number, d: any) => sum + (Number(d.total_money) || 0), 0);
 
+          const uniqueCowsStats = new Set();
           let recovered = 0;
           let deaths = 0;
-          (treatmentsRes.data || []).forEach((t: any) => {
-             if (t.status === 'Recovered') recovered++;
-             if (t.status === 'Death') deaths++;
+          // Sort by latest checkup first to count only the current status for each unique cow
+          const sortedTreatments = (treatmentsRes.data || []).sort((a: any, b: any) => 
+            new Date(b.checkup_date).getTime() - new Date(a.checkup_date).getTime()
+          );
+
+          sortedTreatments.forEach((t: any) => {
+             const cowId = t.cow_token_no || t.cow;
+             if (!uniqueCowsStats.has(cowId)) {
+               uniqueCowsStats.add(cowId);
+               if (t.status === 'Recovered') recovered++;
+               if (t.status === 'Death') deaths++;
+             }
           });
 
           // Medicine inventory stock sum

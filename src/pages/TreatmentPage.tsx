@@ -318,10 +318,15 @@ const TreatmentPage = () => {
     return matchesSearch && matchesStatus;
   });
 
+  const uniqueCowsStats = new Set();
   const stats = filteredTreatments.reduce((acc, t) => {
-    if (t.status === "Ongoing") acc.recovering++;
-    else if (t.status === "Recovered") acc.recovered++;
-    else if (t.status === "Death") acc.death++;
+    const token = t.cow_token_no || t.cow;
+    if (!uniqueCowsStats.has(token)) {
+      uniqueCowsStats.add(token);
+      if (t.status === "Ongoing") acc.recovering++;
+      else if (t.status === "Recovered") acc.recovered++;
+      else if (t.status === "Death") acc.death++;
+    }
     return acc;
   }, { recovering: 0, recovered: 0, death: 0 });
 
