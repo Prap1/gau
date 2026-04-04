@@ -567,8 +567,8 @@ const TreatmentPage = () => {
                               setValue("cow", "", { shouldValidate: true });
                             }}
                             className={`px-2.5 py-1 rounded-md transition-all ${cowInputMode === "manual"
-                                ? "bg-primary text-primary-foreground shadow"
-                                : "text-muted-foreground hover:text-foreground"
+                              ? "bg-primary text-primary-foreground shadow"
+                              : "text-muted-foreground hover:text-foreground"
                               }`}
                           >
                             Manual
@@ -582,8 +582,8 @@ const TreatmentPage = () => {
                               setValue("cow", "", { shouldValidate: true });
                             }}
                             className={`px-2.5 py-1 rounded-md transition-all ${cowInputMode === "dropdown"
-                                ? "bg-primary text-primary-foreground shadow"
-                                : "text-muted-foreground hover:text-foreground"
+                              ? "bg-primary text-primary-foreground shadow"
+                              : "text-muted-foreground hover:text-foreground"
                               }`}
                           >
                             Select

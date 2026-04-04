@@ -50,10 +50,10 @@ export const addUser = createAsyncThunk("users/addUser", async (data: any, { rej
     return response.data;
   } catch (error: any) {
     if (error.response?.data) {
-       const errVals = Object.values(error.response.data);
-       if (errVals.length > 0 && Array.isArray(errVals[0])) {
-           return rejectWithValue(errVals[0][0]);
-       }
+      const errVals = Object.values(error.response.data);
+      if (errVals.length > 0 && Array.isArray(errVals[0])) {
+        return rejectWithValue(errVals[0][0]);
+      }
     }
     return rejectWithValue(error.response?.data?.message || "Failed to add user");
   }

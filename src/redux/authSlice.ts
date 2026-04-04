@@ -26,11 +26,28 @@ export interface DoctorDashboardStats {
   total_medicines_stock: number;
 }
 
+export interface AdminDashboardStats {
+  total_users: number;
+  total_doctors: number;
+  total_members: number;
+  total_cows: number;
+  total_earnings: number;
+  total_recovered: number;
+  total_deaths: number;
+  total_medicine_stock: number;
+}
+
+export interface MemberDashboardStats {
+  total_cows: number;
+  total_deaths: number;
+  total_medicine_stock: number;
+}
+
 export const updateProfile = createAsyncThunk(
   'auth/updateProfile',
   async (profileData: FormData, { rejectWithValue }) => {
     try {
-      const response = await api.patch('auth/profile/update/', profileData, {
+      const response = await api.patch('/auth/profile/update/', profileData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -53,6 +70,8 @@ interface AuthState {
   isSidebarOpen: boolean;
   pendingApproval: boolean;
   doctorStats: DoctorDashboardStats | null;
+  adminStats: AdminDashboardStats | null;
+  memberStats: MemberDashboardStats | null;
   isLoggingOut: boolean;
   isAuthActionLoading: boolean;
   authActionMessage: string | null;
@@ -68,6 +87,8 @@ const initialState: AuthState = {
   isSidebarOpen: false,
   pendingApproval: false,
   doctorStats: null,
+  adminStats: null,
+  memberStats: null,
   isLoggingOut: false,
   isAuthActionLoading: false,
   authActionMessage: null,
@@ -77,7 +98,7 @@ export const register = createAsyncThunk(
   'auth/register',
   async (userData: any, { rejectWithValue }) => {
     try {
-      const response = await api.post('auth/register/', userData);
+      const response = await api.post('/auth/register/', userData);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data || 'Registration failed');
@@ -89,7 +110,7 @@ export const verifyOtp = createAsyncThunk(
   'auth/verifyOtp',
   async (otpData: { email: string; code: string }, { rejectWithValue }) => {
     try {
-      const response = await api.post('auth/verify-otp/', otpData);
+      const response = await api.post('/auth/verify-otp/', otpData);
       // If tokens exist, it's a Doctor/Admin — log them in
       if (response.data.tokens) {
         localStorage.setItem('access_token', response.data.tokens.access);
@@ -107,7 +128,7 @@ export const login = createAsyncThunk(
   'auth/login',
   async (loginData: any, { rejectWithValue }) => {
     try {
-      const response = await api.post('auth/login/', loginData);
+      const response = await api.post('/auth/login/', loginData);
       localStorage.setItem('access_token', response.data.tokens.access);
       localStorage.setItem('refresh_token', response.data.tokens.refresh);
       localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -132,7 +153,7 @@ export const forgotPassword = createAsyncThunk(
   'auth/forgotPassword',
   async (emailData: { email: string }, { rejectWithValue }) => {
     try {
-      const response = await api.post('auth/forgot-password/', emailData);
+      const response = await api.post('/auth/forgot-password/', emailData);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data || 'Failed to send reset link');
@@ -144,7 +165,7 @@ export const resetPassword = createAsyncThunk(
   'auth/resetPassword',
   async (resetData: any, { rejectWithValue }) => {
     try {
-      const response = await api.post('auth/reset-password/', resetData);
+      const response = await api.post('/auth/reset-password/', resetData);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data || 'Password reset failed');
@@ -156,7 +177,7 @@ export const resendOtp = createAsyncThunk(
   'auth/resendOtp',
   async (emailData: { email: string }, { rejectWithValue }) => {
     try {
-      const response = await api.post('auth/resend-otp/', emailData);
+      const response = await api.post('/auth/resend-otp/', emailData);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data || 'Failed to resend OTP');
@@ -168,7 +189,7 @@ export const fetchDoctorDashboard = createAsyncThunk(
   'auth/fetchDoctorDashboard',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await api.get('auth/dashboard/doctor/');
+      const response = await api.get('/auth/dashboard/doctor/');
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data || 'Failed to fetch doctor dashboard');
@@ -181,7 +202,7 @@ export const logout = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const refresh = localStorage.getItem('refresh_token');
-      await api.post('auth/logout/', { refresh });
+      await api.post('/auth/logout/', { refresh });
     } catch (error: any) {
       // Even if API fails, we clear local storage
     } finally {
@@ -372,7 +393,7 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = (action.payload as any)?.error || 'Profile update failed';
       })
-      // Doctor Dashboard
+      // Dashboards
       .addCase(fetchDoctorDashboard.fulfilled, (state, action) => {
         state.doctorStats = action.payload.stats;
       });

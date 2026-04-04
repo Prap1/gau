@@ -34,56 +34,19 @@ const Index = () => {
     if (isAuthenticated && (user?.role === 'admin' || user?.role === 'member')) {
       const fetchOrgData = async () => {
         try {
-          const [cowsRes, baseStatsRes, treatmentsRes] = await Promise.all([
-            api.get('/cattle/'),
-            api.get('/cattle/base-stats/').catch(() => ({ data: { total: 0 } })),
-            api.get('/medical/')
-          ]);
+          const endpoint = user.role === 'admin'
+            ? '/auth/dashboard/admin/'
+            : '/auth/dashboard/member/';
 
-          let donorsRes = { data: [] };
-          let medicinesRes = { data: [] };
-
-          if (user?.role === 'admin') {
-            donorsRes = await api.get('/management/donors/').catch(() => ({ data: [] }));
-          }
-          if (user?.role === 'member') {
-            medicinesRes = await api.get('/inventory/medicines/').catch(() => ({ data: [] }));
-          }
-
-          const dynamicCowsCount = cowsRes.data?.length || 0;
-          const baseCount = baseStatsRes.data?.total || 0;
-          const totalCows = dynamicCowsCount + baseCount;
-
-          const totalEarnings = (donorsRes.data || []).reduce((sum: number, d: any) => sum + (Number(d.total_money) || 0), 0);
-
-          const latestStatusMap = new Map();
-          let recovered = 0;
-          let deaths = 0;
-
-          (treatmentsRes.data || []).forEach((t: any) => {
-            const cowId = t.cow_token_no || t.cow;
-            if (!cowId) return;
-            // Use 0 as fallback for missing dates to ensure any date takes precedence
-            const date = t.checkup_date ? new Date(t.checkup_date).getTime() : 0;
-            if (!latestStatusMap.has(cowId) || date > latestStatusMap.get(cowId).date) {
-              latestStatusMap.set(cowId, { status: t.status, date });
-            }
-          });
-
-          latestStatusMap.forEach((val) => {
-            if (val.status === 'Recovered') recovered++;
-            if (val.status === 'Death') deaths++;
-          });
-
-          // Medicine inventory stock sum
-          const totalMedicine = (medicinesRes.data || []).reduce((sum: number, m: any) => sum + (Number(m.stock) || 0), 0);
+          const res = await api.get(endpoint);
+          const stats = res.data?.stats || {};
 
           setOrgStatsData({
-            totalCows,
-            totalEarnings,
-            totalRecovers: recovered,
-            totalDeath: deaths,
-            totalMedicine,
+            totalCows: stats.total_cows || 0,
+            totalEarnings: stats.total_earnings || 0,
+            totalRecovers: stats.total_recovered || 0,
+            totalDeath: stats.total_deaths || 0,
+            totalMedicine: stats.total_medicine_stock || 0,
             isLoading: false
           });
         } catch (error) {
@@ -91,66 +54,66 @@ const Index = () => {
           setOrgStatsData(prev => ({ ...prev, isLoading: false }));
         }
       };
-      
+
       fetchOrgData();
     }
   }, [isAuthenticated, user, dispatch]);
 
   if (isAuthenticated) {
     const doctorDashboardItems = [
-        { label: "Total Deaths", value: doctorStats?.total_deaths?.toString() ?? "0", icon: Activity, color: "text-red-500", bg: "bg-red-50" },
-        { label: "Total Cows Count", value: doctorStats?.total_cows?.toString() ?? "0", icon: Thermometer, color: "text-blue-500", bg: "bg-blue-50" },
-        { label: "Medicine Inventory", value: doctorStats?.total_medicines_stock?.toString() ?? "0 units", icon: BriefcaseMedical, color: "text-emerald-500", bg: "bg-emerald-50" },
-        { label: "Work Status", value: "Hospital Admin", icon: Star, color: "text-amber-500", bg: "bg-amber-50" },
+      { label: "Total Deaths", value: doctorStats?.total_deaths?.toString() ?? "0", icon: Activity, color: "text-red-500", bg: "bg-red-50" },
+      { label: "Total Cows Count", value: doctorStats?.total_cows?.toString() ?? "0", icon: Thermometer, color: "text-blue-500", bg: "bg-blue-50" },
+      { label: "Medicine Inventory", value: doctorStats?.total_medicines_stock?.toString() ?? "0 units", icon: BriefcaseMedical, color: "text-emerald-500", bg: "bg-emerald-50" },
+      { label: "Work Status", value: "Hospital Admin", icon: Star, color: "text-amber-500", bg: "bg-amber-50" },
     ];
 
     const adminDashboardItems = [
-        { label: "Total Earnings", value: orgStatsData.isLoading ? "..." : `₹ ${orgStatsData.totalEarnings.toLocaleString()}`, icon: IndianRupee, color: "text-emerald-500", bg: "bg-emerald-50" },
-        { label: "Total Cows", value: orgStatsData.isLoading ? "..." : orgStatsData.totalCows.toString(), icon: LayoutDashboard, color: "text-blue-500", bg: "bg-blue-50" },
-        { label: "Total Recovers", value: orgStatsData.isLoading ? "..." : orgStatsData.totalRecovers.toString(), icon: Stethoscope, color: "text-green-500", bg: "bg-green-50" },
-        { label: "Total Death", value: orgStatsData.isLoading ? "..." : orgStatsData.totalDeath.toString(), icon: AlertTriangle, color: "text-red-500", bg: "bg-red-50" },
+      { label: "Total Earnings", value: orgStatsData.isLoading ? "..." : `₹ ${orgStatsData.totalEarnings.toLocaleString()}`, icon: IndianRupee, color: "text-emerald-500", bg: "bg-emerald-50" },
+      { label: "Total Cows", value: orgStatsData.isLoading ? "..." : orgStatsData.totalCows.toString(), icon: LayoutDashboard, color: "text-blue-500", bg: "bg-blue-50" },
+      { label: "Total Recovers", value: orgStatsData.isLoading ? "..." : orgStatsData.totalRecovers.toString(), icon: Stethoscope, color: "text-green-500", bg: "bg-green-50" },
+      { label: "Total Death", value: orgStatsData.isLoading ? "..." : orgStatsData.totalDeath.toString(), icon: AlertTriangle, color: "text-red-500", bg: "bg-red-50" },
     ];
 
     const memberDashboardItems = [
-        { label: "Total Cows", value: orgStatsData.isLoading ? "..." : orgStatsData.totalCows.toString(), icon: Thermometer, color: "text-blue-500", bg: "bg-blue-50" },
-        { label: "Total Death", value: orgStatsData.isLoading ? "..." : orgStatsData.totalDeath.toString(), icon: AlertTriangle, color: "text-red-500", bg: "bg-red-50" },
-        { label: "Medicine Inventory", value: orgStatsData.isLoading ? "..." : `${orgStatsData.totalMedicine} units`, icon: BriefcaseMedical, color: "text-emerald-500", bg: "bg-emerald-50" },
-        { label: "My Role", value: "Community Member", icon: Users, color: "text-indigo-500", bg: "bg-indigo-50" },
+      { label: "Total Cows", value: orgStatsData.isLoading ? "..." : orgStatsData.totalCows.toString(), icon: Thermometer, color: "text-blue-500", bg: "bg-blue-50" },
+      { label: "Total Death", value: orgStatsData.isLoading ? "..." : orgStatsData.totalDeath.toString(), icon: AlertTriangle, color: "text-red-500", bg: "bg-red-50" },
+      { label: "Medicine Inventory", value: orgStatsData.isLoading ? "..." : `${orgStatsData.totalMedicine} units`, icon: BriefcaseMedical, color: "text-emerald-500", bg: "bg-emerald-50" },
+      { label: "My Role", value: "Community Member", icon: Users, color: "text-indigo-500", bg: "bg-indigo-50" },
     ];
 
     const standardStats = [
-        { label: "My Contributions", value: "₹ 5,000", icon: Heart, color: "text-red-500", bg: "bg-red-50" },
-        { label: "Community Members", value: "1,240", icon: Users, color: "text-blue-500", bg: "bg-blue-50" },
-        { label: "Active Programs", value: "8", icon: LayoutDashboard, color: "text-indigo-500", bg: "bg-indigo-50" },
-        { label: "Total Blessings", value: "450", icon: Star, color: "text-amber-500", bg: "bg-amber-50" },
+      { label: "My Contributions", value: "₹ 5,000", icon: Heart, color: "text-red-500", bg: "bg-red-50" },
+      { label: "Community Members", value: "1,240", icon: Users, color: "text-blue-500", bg: "bg-blue-50" },
+      { label: "Active Programs", value: "8", icon: LayoutDashboard, color: "text-indigo-500", bg: "bg-indigo-50" },
+      { label: "Total Blessings", value: "450", icon: Star, color: "text-amber-500", bg: "bg-amber-50" },
     ];
 
-    const dashboardStats = 
-        user?.role === 'doctor' ? doctorDashboardItems : 
-        user?.role === 'admin' ? adminDashboardItems : 
-        user?.role === 'member' ? memberDashboardItems : 
-        standardStats;
+    const dashboardStats =
+      user?.role === 'doctor' ? doctorDashboardItems :
+        user?.role === 'admin' ? adminDashboardItems :
+          user?.role === 'member' ? memberDashboardItems :
+            standardStats;
 
     return (
       <Layout>
         <div className="p-4 sm:p-8 max-w-7xl mx-auto">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-8"
           >
             <h1 className="text-3xl font-bold text-foreground">Welcome back, {user?.first_name}! 👋</h1>
             <p className="text-muted-foreground">
-                {user?.role === 'doctor' 
-                    ? "Your medical dashboard for Shree Jalaram Gau Seva is ready."
-                    : "Here's what's happening today at Shree Jalaram Gau Seva."}
+              {user?.role === 'doctor'
+                ? "Your medical dashboard for Shree Jalaram Gau Seva is ready."
+                : "Here's what's happening today at Shree Jalaram Gau Seva."}
             </p>
           </motion.div>
 
           {/* Quick Stats / Dashboard */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {dashboardStats.map((stat, i) => (
-              <motion.div 
+              <motion.div
                 key={i}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
