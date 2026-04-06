@@ -17,7 +17,8 @@ import {
   Wheat,
   UserPlus,
   ChevronRight,
-  ClipboardList
+  ClipboardList,
+  MessageSquare
 } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/redux/store";
@@ -36,6 +37,7 @@ const Sidebar = () => {
     { name: "Cows", icon: Database, href: "/cows", roles: ["admin", "member", "doctor"] },
     { name: "Donors", icon: Heart, href: "/donors", roles: ["doctor", "member", "admin"] },
     { name: "Visitors", icon: User, href: "/visitors", roles: ["doctor", "member", "admin"] },
+    { name: "Campaigns", icon: MessageSquare, href: "/campaigns", roles: ["doctor", "member", "admin"] },
     { name: "Cow Food", icon: Wheat, href: "/cow-food", roles: ["member", "admin", "doctor"] },
     { name: "Medicine", icon: Pill, href: "/medicine", roles: ["doctor", "admin"] },
     { name: "Medicine Usage", icon: ClipboardList, href: "/medicine-usage", roles: ["doctor", "member", "admin"] },

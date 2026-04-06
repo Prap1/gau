@@ -27,6 +27,7 @@ import MedicineUsagePage from "./pages/MedicineUsagePage";
 import VisitorsPage from "./pages/VisitorsPage";
 import DonorsPage from "./pages/DonorsPage";
 import MedicalSettings from "./pages/MedicalSettings";
+import CampaignsPage from "./pages/CampaignsPage";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -63,6 +64,7 @@ const App = () => (
           <Route path="/visitors" element={<ProtectedRoute allowedRoles={["admin", "doctor", "member"]}><VisitorsPage /></ProtectedRoute>} />
           <Route path="/donors" element={<ProtectedRoute allowedRoles={["admin", "doctor", "member"]}><DonorsPage /></ProtectedRoute>} />
           <Route path="/medical-settings" element={<ProtectedRoute allowedRoles={["admin", "doctor"]}><MedicalSettings /></ProtectedRoute>} />
+          <Route path="/campaigns" element={<ProtectedRoute allowedRoles={["admin", "doctor", "member"]}><CampaignsPage /></ProtectedRoute>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
