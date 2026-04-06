@@ -8,6 +8,7 @@ import PageBanner from "@/components/PageBanner";
 import api from "@/redux/api";
 import { toast } from "sonner";
 import { MessageSquare, Send, Users, CheckSquare, Square, Smartphone, Image as ImageIcon } from "lucide-react";
+import img5 from "@/assets/image5.png";
 
 const CampaignsPage = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -69,7 +70,7 @@ const CampaignsPage = () => {
 
         response = await api.post("/management/send-campaign/", formData, {
           headers: {
-             "Content-Type": "multipart/form-data",
+            "Content-Type": "multipart/form-data",
           }
         });
       } else {
@@ -104,6 +105,7 @@ const CampaignsPage = () => {
       <PageBanner
         title="WhatsApp Campaigns"
         subtitle="Send WhatsApp notifications to donors and visitors"
+        image={img5}
       />
       <div className="container py-10 max-w-5xl">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -113,7 +115,7 @@ const CampaignsPage = () => {
                 <MessageSquare className="w-5 h-5 text-primary" />
                 Compose Message
               </h2>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Fast2SMS API Key</label>
@@ -180,11 +182,11 @@ const CampaignsPage = () => {
                   {imagePreview && (
                     <div className="mt-2 relative inline-block p-1 bg-muted rounded-md w-fit">
                       <img src={imagePreview} alt="Preview" className="h-24 w-auto rounded border border-border object-cover" />
-                      <button 
+                      <button
                         onClick={() => { setImageFile(null); setImagePreview(null); }}
                         className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-destructive/90 shadow-sm"
                       >
-                       ✕
+                        ✕
                       </button>
                     </div>
                   )}
@@ -206,7 +208,7 @@ const CampaignsPage = () => {
                 </div>
               </div>
             </div>
-            
+
             {target === "specific" && (
               <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden flex flex-col max-h-[600px]">
                 <div className="p-4 border-b border-border bg-muted/30 flex justify-between items-center">
@@ -223,10 +225,10 @@ const CampaignsPage = () => {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border text-left bg-muted/50">
-                         <th className="p-3 w-10">Select</th>
-                         <th className="p-3">Name</th>
-                         <th className="p-3">Phone</th>
-                         <th className="p-3">Type</th>
+                        <th className="p-3 w-10">Select</th>
+                        <th className="p-3">Name</th>
+                        <th className="p-3">Phone</th>
+                        <th className="p-3">Type</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -235,7 +237,7 @@ const CampaignsPage = () => {
                         return (
                           <tr key={item.id} className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${isSelected ? 'bg-primary/5' : ''}`}>
                             <td className="p-3 text-center cursor-pointer" onClick={() => toggleSelection(item.id)}>
-                              {isSelected ? <CheckSquare className="w-5 h-5 text-primary inline-block"/> : <Square className="w-5 h-5 text-muted-foreground inline-block"/>}
+                              {isSelected ? <CheckSquare className="w-5 h-5 text-primary inline-block" /> : <Square className="w-5 h-5 text-muted-foreground inline-block" />}
                             </td>
                             <td className="p-3 font-medium">{item.name}</td>
                             <td className="p-3 font-mono text-xs">{item.phone}</td>
@@ -258,7 +260,7 @@ const CampaignsPage = () => {
               </div>
             )}
           </div>
-          
+
           <div className="space-y-6">
             <div className="bg-card border border-border rounded-xl p-6 shadow-sm sticky top-24">
               <h3 className="font-semibold flex justify-center items-center gap-2 mb-4">
@@ -271,7 +273,7 @@ const CampaignsPage = () => {
                 {(message || imagePreview) ? (
                   <div className="bg-green-100 p-2 rounded-lg rounded-tr-none shadow-sm w-[85%] self-end break-words text-sm relative">
                     {imagePreview && (
-                       <img src={imagePreview} alt="Attachment" className="w-full rounded mb-2 border border-green-200 object-cover max-h-[160px]" />
+                      <img src={imagePreview} alt="Attachment" className="w-full rounded mb-2 border border-green-200 object-cover max-h-[160px]" />
                     )}
                     {message && <div className="px-1 py-0.5 whitespace-pre-wrap">{message}</div>}
                     <span className="text-[10px] text-green-800/60 block text-right mt-1 pr-1">12:00 PM</span>
