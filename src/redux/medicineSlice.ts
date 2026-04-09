@@ -69,6 +69,16 @@ export const deleteMedicine = createAsyncThunk("medicine/deleteMedicine", async 
   }
 });
 
+export const payMedicinesByBill = createAsyncThunk("medicine/payMedicinesByBill", async (data: { bill_number: string; gst_amount: string | number }, { rejectWithValue, dispatch }) => {
+  try {
+    const response = await api.post("/inventory/medicines/pay-by-bill/", data);
+    dispatch(fetchMedicines()); // Refetch medicines to get updated prices
+    return response.data;
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.error || error.response?.data?.message || "Failed to process bill payment");
+  }
+});
+
 const medicineSlice = createSlice({
   name: "medicine",
   initialState,
@@ -133,6 +143,18 @@ const medicineSlice = createSlice({
         state.message = "Record deleted successfully!";
       })
       .addCase(deleteMedicine.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(payMedicinesByBill.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(payMedicinesByBill.fulfilled, (state, action) => {
+        state.loading = false;
+        state.message = action.payload.message || "Bill paid successfully and GST applied!";
+      })
+      .addCase(payMedicinesByBill.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

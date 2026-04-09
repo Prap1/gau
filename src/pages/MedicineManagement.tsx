@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/redux/store";
-import { fetchMedicines, addMedicine, updateMedicine, deleteMedicine, clearMedicineMessage, clearMedicineError } from "@/redux/medicineSlice";
+import { fetchMedicines, addMedicine, updateMedicine, deleteMedicine, clearMedicineMessage, clearMedicineError, payMedicinesByBill } from "@/redux/medicineSlice";
 import { fetchMedicalStores } from "@/redux/medicalStoreSlice";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
@@ -72,6 +72,10 @@ const MedicineManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
   const [selectedYear, setSelectedYear] = useState<string>("all");
+  
+  const [isPayBillModalOpen, setIsPayBillModalOpen] = useState(false);
+  const [selectedBillForPay, setSelectedBillForPay] = useState("");
+  const [gstAmountForPay, setGstAmountForPay] = useState<number | string>("");
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<MedicineFormData>();
 
@@ -425,6 +429,13 @@ const MedicineManagement = () => {
 
           <div className="flex gap-3">
             <button
+              onClick={() => setIsPayBillModalOpen(true)}
+              className="flex items-center justify-center gap-2 px-6 py-3 bg-secondary text-secondary-foreground border border-border rounded-xl text-lg font-bold shadow-lg hover:bg-secondary/80 transition-all w-full sm:w-auto"
+            >
+              <CreditCard className="w-5 h-5" />
+              Pay Bill
+            </button>
+            <button
               onClick={() => openModal()}
               className="flex items-center justify-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-xl text-lg font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all w-full sm:w-auto"
             >
@@ -673,6 +684,90 @@ const MedicineManagement = () => {
                     <button type="submit" className="flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-bold">Save</button>
                   </div>
                 </form>
+              </motion.div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Pay Bill Modal */}
+      <AnimatePresence>
+        {isPayBillModalOpen && (
+          <div className="fixed inset-0 z-[120] overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsPayBillModalOpen(false)} className="fixed inset-0 bg-background/80 backdrop-blur-sm" />
+              <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative w-full max-w-md bg-background border border-border rounded-2xl shadow-2xl p-6 flex flex-col">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-foreground flex items-center gap-2"><CreditCard className="w-5 h-5 text-primary" /> Pay via Bill Number</h2>
+                  <button onClick={() => setIsPayBillModalOpen(false)} className="p-2 rounded-lg hover:bg-muted text-muted-foreground"><X className="w-5 h-5" /></button>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-bold mb-1.5 flex items-center gap-2"><Hash className="w-4 h-4 text-primary" /> Select Bill Number</label>
+                    <select 
+                      value={selectedBillForPay}
+                      onChange={(e) => setSelectedBillForPay(e.target.value)}
+                      className="w-full px-4 py-2 rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary/50"
+                    >
+                      <option value="">-- Select Bill --</option>
+                      {Array.from(new Set(medicines.map(m => m.bill_number))).filter(Boolean).map(bill => (
+                        <option key={bill} value={bill}>{bill}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {selectedBillForPay && (
+                    <div className="p-3 bg-muted/30 rounded-lg border border-border">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm font-medium text-muted-foreground">Original Total:</span>
+                        <span className="text-sm font-bold">₹{
+                          medicines.filter(m => m.bill_number === selectedBillForPay).reduce((sum, m) => sum + Number(m.total_price), 0).toFixed(2)
+                        }</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-bold mb-1.5 ">GST Amount (₹)</label>
+                    <input 
+                      type="number"
+                      step="0.01"
+                      placeholder="e.g. 50"
+                      value={gstAmountForPay}
+                      onChange={(e) => setGstAmountForPay(e.target.value)}
+                      className="w-full px-4 py-2 rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary/50"
+                    />
+                  </div>
+
+                  {selectedBillForPay && (
+                    <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
+                      <div className="flex justify-between items-center text-lg font-black text-primary">
+                        <span>Grand Total (Paid):</span>
+                        <span>₹{(
+                          medicines.filter(m => m.bill_number === selectedBillForPay).reduce((sum, m) => sum + Number(m.total_price), 0) + 
+                          (Number(gstAmountForPay) || 0)
+                        ).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 pt-4 border-t border-border mt-4">
+                    <button onClick={() => setIsPayBillModalOpen(false)} className="flex-1 px-4 py-2 rounded-lg border border-border font-medium">Cancel</button>
+                    <button 
+                      onClick={() => {
+                        if (!selectedBillForPay) return toast.error("Please select a bill number");
+                        dispatch(payMedicinesByBill({ bill_number: selectedBillForPay, gst_amount: gstAmountForPay || 0 }));
+                        setIsPayBillModalOpen(false);
+                        setSelectedBillForPay("");
+                        setGstAmountForPay("");
+                      }}
+                      className="flex-1 px-4 py-2 rounded-lg bg-primary text-primary-foreground font-bold hover:bg-primary/90"
+                    >
+                      Submit Payment
+                    </button>
+                  </div>
+                </div>
               </motion.div>
             </div>
           </div>
