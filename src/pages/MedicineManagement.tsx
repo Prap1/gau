@@ -38,7 +38,7 @@ interface Medicine {
   stia_name: string;
   total_price: number;
   paid: number;
-  medicine_type?: "Bottle" | "Tablets" | "Injection";
+  medicine_type?: "Bottle" | "Tablets" | "Injection" | "Powder" | "Ointment";
   medicine_quantity?: string;
   medicine_unit?: "ml" | "L" | "Units";
   usages?: MedicineUsage[];
@@ -55,7 +55,7 @@ interface MedicineFormData {
   stia_name: string;
   total_price: number;
   paid: number;
-  medicine_type: "Bottle" | "Tablets" | "Injection";
+  medicine_type: "Bottle" | "Tablets" | "Injection" | "Powder" | "Ointment";
   medicine_quantity?: string;
   medicine_unit: "ml" | "L" | "Units";
 }
@@ -542,6 +542,8 @@ const MedicineManagement = () => {
                         <option value="Injection">Injection</option>
                         <option value="Tablets">Tablets</option>
                         <option value="Bottle">Bottle</option>
+                        <option value="Powder">Powder</option>
+                        <option value="Ointment">Ointment</option>
                       </select>
                     </div>
                   </div>

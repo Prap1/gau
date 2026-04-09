@@ -6,7 +6,7 @@ interface MedicineUsage {
   medicine: string;
   medicine_name: string;
   batch_number: string;
-  medicine_type: "Bottle" | "Tablets" | "Injection";
+  medicine_type: "Bottle" | "Tablets" | "Injection" | "Powder" | "Ointment";
   medicine_unit: "ml" | "L" | "Units";
   quantity: number;
   usage_date: string;

@@ -23,7 +23,7 @@ interface MedicineUsage {
   medicine: string;
   medicine_name: string;
   batch_number: string;
-  medicine_type: "Bottle" | "Tablets" | "Injection";
+  medicine_type: "Bottle" | "Tablets" | "Injection" | "Powder" | "Ointment";
   medicine_unit: "ml" | "L" | "Units";
   quantity: number;
   usage_date: string;
@@ -158,7 +158,7 @@ const MedicineUsagePage: React.FC = () => {
   const selectedMedicineId = watch("medicine");
   const selectedMedObj = medicines.find(m => String(m.id) === String(selectedMedicineId));
   const isBottle = selectedMedObj?.medicine_type === "Bottle";
-  const unitLabel = isBottle ? "ml" : "Units/Tablets";
+  const unitLabel = isBottle ? "ml" : "Units";
 
   const handleDeleteUsage = async (id: string) => {
     const result = await MySwal.fire({

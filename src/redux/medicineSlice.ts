@@ -13,7 +13,7 @@ interface Medicine {
   stia_name: string;
   total_price: number;
   paid: number;
-  medicine_type?: "Bottle" | "Tablets" | "Injection";
+  medicine_type?: "Bottle" | "Tablets" | "Injection" | "Powder" | "Ointment";
   medicine_quantity?: string;
   medicine_unit?: "ml" | "L" | "Units";
   usages?: any[];
