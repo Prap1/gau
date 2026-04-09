@@ -61,7 +61,7 @@ const symptomSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchSymptoms.pending, (state) => {
-        state.loading = true;
+        if (state.symptoms.length === 0) state.loading = true;
         state.error = null;
       })
       .addCase(fetchSymptoms.fulfilled, (state, action) => {

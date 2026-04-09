@@ -62,7 +62,7 @@ const medicalStoreSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchMedicalStores.pending, (state) => {
-        state.loading = true;
+        if (state.medicalStores.length === 0) if (state.medicalStores.length === 0) state.loading = true;
         state.error = null;
       })
       .addCase(fetchMedicalStores.fulfilled, (state, action) => {

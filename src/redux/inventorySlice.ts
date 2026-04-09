@@ -72,7 +72,7 @@ const inventorySlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchFoodStocks.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(fetchFoodStocks.pending, (state) => { if (state.foodStocks.length === 0) state.loading = true; state.error = null; })
       .addCase(fetchFoodStocks.fulfilled, (state, action) => { state.loading = false; state.foodStocks = action.payload; })
       .addCase(fetchFoodStocks.rejected, (state, action) => { state.loading = false; state.error = action.payload as string; })
       .addCase(addFoodStock.pending, (state) => { state.loading = true; })

@@ -98,7 +98,7 @@ const visitorSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchVisitors.pending, (state) => {
-        state.loading = true;
+        if (state.visitors.length === 0) if (state.visitors.length === 0) state.loading = true;
         state.error = null;
       })
       .addCase(fetchVisitors.fulfilled, (state, action) => {

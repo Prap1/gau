@@ -78,7 +78,7 @@ const medicineUsageSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchMedicineUsages.pending, (state) => {
-        state.loading = true;
+        if (state.usages.length === 0) state.loading = true;
         state.error = null;
       })
       .addCase(fetchMedicineUsages.fulfilled, (state, action) => {

@@ -93,7 +93,7 @@ const donorSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchDonors.pending, (state) => {
-        state.loading = true;
+        if (state.donors.length === 0) state.loading = true;
         state.error = null;
       })
       .addCase(fetchDonors.fulfilled, (state, action) => {

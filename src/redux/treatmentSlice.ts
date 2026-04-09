@@ -99,7 +99,7 @@ const treatmentSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchTreatments.pending, (state) => {
-        state.loading = true;
+        if (state.treatments.length === 0) state.loading = true;
         state.error = null;
       })
       .addCase(fetchTreatments.fulfilled, (state, action) => {
