@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://sukhdeshwardam-backends.onrender.com/api/',
+  baseURL: 'https://192.168.31.75:8000/api/',
   headers: {
     'Content-Type': 'application/json',
   },
