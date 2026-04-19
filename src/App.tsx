@@ -47,9 +47,9 @@ const App = () => (
           <Route path="/blog/:id" element={<BlogDetailPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/login" element={<LoginPage />} />
-         {/* <Route path="/register" element={<RegisterPage />} /> 
+          <Route path="/register" element={<RegisterPage />} /> 
          <Route path="/verify-otp" element={<VerifyOtpPage />} /> 
-         <Route path="/forgot-password" element={<ForgotPasswordPage />} />  */}
+         <Route path="/forgot-password" element={<ForgotPasswordPage />} />  
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/my-blogs" element={<ProtectedRoute allowedRoles={["admin", "member"]}><MemberBlogPage /></ProtectedRoute>} />
